@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catatan Pendapatan Pekerja</title>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --bg: #f8f9fa;
+            --card: #ffffff;
+            --text: #2b2d42;
+            --text-light: #8d99ae;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            padding: 15px;
+            padding-bottom: 80px;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        /* Card Saldo */
+        .balance-card {
+            background: linear-gradient(135deg, var(--primary), #3a0ca3);
+            color: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 15px rgba(67, 97, 238, 0.2);
+            text-align: center;
+        }
+
+        .balance-card h2 {
+            font-size: 14px;
+            font-weight: 500;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .balance-card .amount {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        /* Menu Grid */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .menu-btn {
+            background: var(--card);
+            border: none;
+            border-radius: 12px;
+            padding: 15px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .menu-btn:active { transform: scale(0.98); }
+        .menu-btn.primary { color: var(--primary); }
+        .menu-btn.danger { color: var(--danger); }
+        .menu-btn.success { color: var(--success); }
+
+        /* History List */
+        .section-title {
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: var(--text-light);
+        }
+
+        .history-list {
+            background: var(--card);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        .history-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .history-item:last-child { border-bottom: none; }
+        
+        .history-info h4 { font-size: 14px; margin-bottom: 3px; }
+        .history-info p { font-size: 12px; color: var(--text-light); }
+        .history-amount { font-weight: bold; font-size: 14px; }
+        .history-amount.plus { color: var(--success); }
+        .history-amount.minus { color: var(--danger); }
+
+        /* Modal / Pop-up */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal {
+            background: var(--card);
+            width: 100%;
+            max-width: 400px;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            transform: translateY(20px);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .modal.active {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .modal-header {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            color: var(--text-light);
+            margin-bottom: 5px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .btn-cancel { background: #eee; color: var(--text); }
+        .btn-submit { background: var(--primary); color: white; }
+        .btn-success { background: var(--success); color: white; }
+
+        /* Uang Jajan Info */
+        .jajan-info {
+            background: #e0f7fa;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="balance-card">
+        <h2>Saldo Utama</h2>
+        <div class="amount" id="saldoDisplay">Rp 0</div>
+    </div>
+
+    <div id="jajanInfoContainer" class="jajan-info" style="display: none;">
+        <strong>Status Uang Jajan:</strong> Aktif<br>
+        <span style="font-size: 12px; color: #006064;" id="jajanTerkumpulText"></span>
+    </div>
+
+    <div class="menu-grid">
+        <button class="menu-btn primary" onclick="openModal('modalPekerjaan')">
+            📝 Input Pekerjaan
+        </button>
+        <button class="menu-btn danger" onclick="openModal('modalPenarikan')">
+            💸 Tarik Saldo
+        </button>
+        <button class="menu-btn success" style="grid-column: span 2;" onclick="openModal('modalJajanSetup')" id="btnSetupJajan">
+            ⚙️ Atur Mulai Uang Jajan
+        </button>
+    </div>
+
+    <h3 class="section-title">Riwayat Transaksi</h3>
+    <div class="history-list" id="historyList">
+        </div>
+</div>
+
+<div class="modal-overlay" id="modalPekerjaan">
+    <div class="modal">
+        <div class="modal-header">Input Pekerjaan</div>
+        <div class="form-group">
+            <label>Jumlah Terpal (Rp 2.000/pcs)</label>
+            <input type="number" id="inputTerpal" placeholder="0">
+        </div>
+        <div class="form-group">
+            <label>Jumlah Packing (Rp 25/pcs)</label>
+            <input type="number" id="inputPacking" placeholder="0">
+        </div>
+        <div class="form-group">
+            <label>Tanggal (Kosongkan untuk hari ini)</label>
+            <input type="date" id="inputTglKerja">
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-cancel" onclick="closeModal('modalPekerjaan')">Batal</button>
+            <button class="btn btn-submit" onclick="submitPekerjaan()">Simpan</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="modalPenarikan">
+    <div class="modal">
+        <div class="modal-header">Tarik Saldo</div>
+        <div class="form-group">
+            <label>Jumlah Penarikan (Rp)</label>
+            <input type="number" id="inputTarikAmount" placeholder="Contoh: 50000">
+        </div>
+        <div class="form-group">
+            <label>Tanggal Penarikan (Kosongkan untuk hari ini)</label>
+            <input type="date" id="inputTglTarik">
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-cancel" onclick="closeModal('modalPenarikan')">Batal</button>
+            <button class="btn btn-submit" onclick="submitPenarikan()">Tarik</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="modalJajanSetup">
+    <div class="modal">
+        <div class="modal-header">Pengaturan Uang Jajan</div>
+        <p style="font-size: 13px; color: #666; margin-bottom: 15px; text-align: center;">
+            Uang jajan Rp 5.000/hari akan terhitung otomatis sejak tanggal yang Anda tentukan.
+        </p>
+        <div class="form-group">
+            <label>Tanggal Pertama Penerimaan</label>
+            <input type="date" id="inputTglJajan">
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-cancel" onclick="closeModal('modalJajanSetup')">Batal</button>
+            <button class="btn btn-submit" onclick="setupUangJajan()">Mulai</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="modalNotifJajan">
+    <div class="modal">
+        <div class="modal-header">Uang Jajan Terkumpul! 🎉</div>
+        <p style="font-size: 14px; text-align: center; margin-bottom: 15px;" id="textNotifJajan">
+            Bulan telah berganti. Anda memiliki uang jajan sebesar <strong id="amountNotifJajan"></strong>.
+        </p>
+        <p style="font-size: 12px; color: #666; text-align: center; margin-bottom: 20px;">
+            Pilih "Simpan" untuk memasukkan ke Saldo Utama, atau "Terima" untuk mengambilnya langsung (tidak masuk saldo utama).
+        </p>
+        <div class="btn-group">
+            <button class="btn btn-cancel" style="background: var(--danger); color: white;" onclick="prosesJajan('terima')">Terima (Tarik)</button>
+            <button class="btn btn-success" onclick="prosesJajan('simpan')">Simpan (Ke Saldo)</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Konfigurasi Harga
+    const HARGA = { terpal: 2000, packing: 25, jajanPerHari: 5000 };
+
+    // Inisialisasi Data dari LocalStorage
+    let appData = JSON.parse(localStorage.getItem('catatanPekerjaData')) || {
+        saldoUtama: 0,
+        jajanStartDate: null,
+        jajanLastClaimDate: null,
+        history: []
+    };
+
+    // Fungsi Format Uang
+    function formatRp(angka) {
+        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
+    }
+
+    // Fungsi Format Tanggal jadi dd-mm-yyyy
+    function formatDate(dateObj) {
+        let d = dateObj.getDate().toString().padStart(2, '0');
+        let m = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+        let y = dateObj.getFullYear();
+        return `${d}-${m}-${y}`;
+    }
+
+    // Parsing date string YYYY-MM-DD to Date object
+    function parseHTMLDate(dateString) {
+        if (!dateString) return new Date(); // Jika dilewati, otomatis hari ini
+        return new Date(dateString);
+    }
+
+    // Manajemen Modal
+    function openModal(id) {
+        const modal = document.getElementById(id);
+        modal.style.display = 'flex';
+        setTimeout(() => modal.querySelector('.modal').classList.add('active'), 10);
+    }
+
+    function closeModal(id) {
+        const modal = document.getElementById(id);
+        modal.querySelector('.modal').classList.remove('active');
+        setTimeout(() => {
+            modal.style.display = 'none';
+            // Reset input
+            modal.querySelectorAll('input').forEach(input => input.value = '');
+        }, 300);
+    }
+
+    // Simpan & Update UI
+    function saveDataAndUpdateUI() {
+        localStorage.setItem('catatanPekerjaData', JSON.stringify(appData));
+        
+        // Update Saldo
+        document.getElementById('saldoDisplay').innerText = formatRp(appData.saldoUtama);
+        
+        // Update History
+        const historyContainer = document.getElementById('historyList');
+        historyContainer.innerHTML = '';
+        if (appData.history.length === 0) {
+            historyContainer.innerHTML = '<div class="history-item"><p>Belum ada transaksi</p></div>';
+        } else {
+            // Sort descending (terbaru di atas)
+            const sortedHistory = [...appData.history].reverse();
+            sortedHistory.forEach(item => {
+                let sign = item.type === 'in' ? '+' : '-';
+                let colorClass = item.type === 'in' ? 'plus' : 'minus';
+                historyContainer.innerHTML += `
+                    <div class="history-item">
+                        <div class="history-info">
+                            <h4>${item.title}</h4>
+                            <p>${item.date} | ${item.desc}</p>
+                        </div>
+                        <div class="history-amount ${colorClass}">${sign} ${formatRp(item.amount)}</div>
+                    </div>
+                `;
+            });
+        }
+
+        // Update Uang Jajan UI Setup Button
+        if (appData.jajanStartDate) {
+            document.getElementById('btnSetupJajan').style.display = 'none';
+            document.getElementById('jajanInfoContainer').style.display = 'block';
+            hitungUangJajanBerjalan();
+        }
+    }
+
+    // Submit Pekerjaan
+    function submitPekerjaan() {
+        const terpal = parseInt(document.getElementById('inputTerpal').value) || 0;
+        const packing = parseInt(document.getElementById('inputPacking').value) || 0;
+        const rawDate = document.getElementById('inputTglKerja').value;
+        
+        if (terpal === 0 && packing === 0) return alert("Isi minimal salah satu pekerjaan!");
+
+        const dateObj = parseHTMLDate(rawDate);
+        const tglFormat = formatDate(dateObj);
+        const totalPendapatan = (terpal * HARGA.terpal) + (packing * HARGA.packing);
+
+        appData.saldoUtama += totalPendapatan;
+        appData.history.push({
+            type: 'in',
+            title: 'Pekerjaan Selesai',
+            desc: `${terpal} Terpal, ${packing} Packing`,
+            amount: totalPendapatan,
+            date: tglFormat
+        });
+
+        saveDataAndUpdateUI();
+        closeModal('modalPekerjaan');
+        alert(`Berhasil menambah Rp ${totalPendapatan.toLocaleString()} ke saldo!`);
+    }
+
+    // Submit Penarikan
+    function submitPenarikan() {
+        const amount = parseInt(document.getElementById('inputTarikAmount').value) || 0;
+        const rawDate = document.getElementById('inputTglTarik').value;
+
+        if (amount <= 0) return alert("Masukkan jumlah penarikan yang valid!");
+        if (amount > appData.saldoUtama) return alert("Saldo tidak mencukupi!");
+
+        const dateObj = parseHTMLDate(rawDate);
+        const tglFormat = formatDate(dateObj);
+
+        appData.saldoUtama -= amount;
+        appData.history.push({
+            type: 'out',
+            title: 'Penarikan Saldo',
+            desc: 'Tarik manual',
+            amount: amount,
+            date: tglFormat
+        });
+
+        saveDataAndUpdateUI();
+        closeModal('modalPenarikan');
+        alert(`Penarikan sebesar Rp ${amount.toLocaleString()} berhasil!`);
+    }
+
+    // Setup Uang Jajan
+    function setupUangJajan() {
+        const rawDate = document.getElementById('inputTglJajan').value;
+        if (!rawDate) return alert("Harap isi tanggal pertama penerimaan!");
+
+        appData.jajanStartDate = rawDate;
+        appData.jajanLastClaimDate = rawDate; // Mulai hitung dari tanggal ini
+        saveDataAndUpdateUI();
+        closeModal('modalJajanSetup');
+        alert("Uang jajan berhasil diaktifkan!");
+        checkNotifUangJajanAkhirBulan();
+    }
+
+    // Hitung Uang Jajan Berjalan (Hanya untuk Display UI)
+    function hitungUangJajanBerjalan() {
+        if (!appData.jajanLastClaimDate) return;
+        
+        const lastClaim = new Date(appData.jajanLastClaimDate);
+        const today = new Date();
+        
+        // Reset waktu ke 00:00:00 untuk akurasi perhitungan hari
+        lastClaim.setHours(0,0,0,0);
+        today.setHours(0,0,0,0);
+
+        const diffTime = today - lastClaim;
+        let diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays < 0) diffDays = 0;
+
+        const terkumpul = diffDays * HARGA.jajanPerHari;
+        document.getElementById('jajanTerkumpulText').innerText = `Estimasi berjalan bulan ini: ${formatRp(terkumpul)} (${diffDays} Hari)`;
+    }
+
+    // Cek Uang Jajan Setiap Akhir Bulan
+    let jajanPendingData = null; // Menyimpan state jajan yang sedang di-popup
+
+    function checkNotifUangJajanAkhirBulan() {
+        if (!appData.jajanLastClaimDate) return;
+
+        const lastClaim = new Date(appData.jajanLastClaimDate);
+        const today = new Date();
+        
+        // Jika bulan hari ini lebih besar dari bulan lastClaim (artinya sudah ganti bulan)
+        // Atau jika tahunnya berganti
+        const isNextMonth = (today.getFullYear() > lastClaim.getFullYear()) || 
+                            (today.getFullYear() === lastClaim.getFullYear() && today.getMonth() > lastClaim.getMonth());
+
+        if (isNextMonth) {
+            // Hitung hari dari lastClaim sampai akhir bulan dari lastClaim
+            const endOfLastClaimMonth = new Date(lastClaim.getFullYear(), lastClaim.getMonth() + 1, 0);
+            
+            // Hitung selisih hari
+            lastClaim.setHours(0,0,0,0);
+            endOfLastClaimMonth.setHours(0,0,0,0);
+            const diffTime = endOfLastClaimMonth - lastClaim;
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 karena dihitung sampai akhir hari
+
+            const totalJajan = diffDays * HARGA.jajanPerHari;
+            
+            // Simpan state untuk diproses nanti saat tombol di klik
+            jajanPendingData = {
+                amount: totalJajan,
+                newClaimDate: endOfLastClaimMonth.toISOString().split('T')[0],
+                monthName: endOfLastClaimMonth.toLocaleString('id-ID', { month: 'long' })
+            };
+
+            document.getElementById('amountNotifJajan').innerText = formatRp(totalJajan);
+            openModal('modalNotifJajan');
+        }
+    }
+
+    function prosesJajan(action) {
+        if (!jajanPendingData) return;
+
+        const tglFormat = formatDate(new Date(jajanPendingData.newClaimDate));
+
+        if (action === 'simpan') {
+            appData.saldoUtama += jajanPendingData.amount;
+            appData.history.push({
+                type: 'in',
+                title: 'Uang Jajan (Simpan)',
+                desc: `Bulan ${jajanPendingData.monthName}`,
+                amount: jajanPendingData.amount,
+                date: tglFormat
+            });
+            alert("Uang jajan berhasil dimasukkan ke Saldo Utama!");
+        } else if (action === 'terima') {
+            appData.history.push({
+                type: 'out',
+                title: 'Uang Jajan (Terima Langsung)',
+                desc: `Ditarik: Bulan ${jajanPendingData.monthName}`,
+                amount: jajanPendingData.amount,
+                date: tglFormat
+            });
+            alert("Uang jajan telah diterima dan dicatat sebagai penarikan!");
+        }
+
+        // Update tanggal claim terakhir ke akhir bulan yang baru saja diproses
+        // Tambah 1 hari agar masuk ke bulan berikutnya
+        let nextStart = new Date(jajanPendingData.newClaimDate);
+        nextStart.setDate(nextStart.getDate() + 1);
+        appData.jajanLastClaimDate = nextStart.toISOString().split('T')[0];
+        
+        jajanPendingData = null;
+        closeModal('modalNotifJajan');
+        saveDataAndUpdateUI();
+
+        // Rekursif cek lagi, siapa tahu user tidak buka aplikasi berbulan-bulan
+        setTimeout(checkNotifUangJajanAkhirBulan, 500); 
+    }
+
+    // Jalankan saat aplikasi pertama kali dibuka
+    window.onload = () => {
+        saveDataAndUpdateUI();
+        setTimeout(checkNotifUangJajanAkhirBulan, 1000); // Beri jeda sedikit agar UI termuat
+    };
+
+</script>
+</body>
+</html>
