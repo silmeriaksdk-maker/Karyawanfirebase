@@ -291,13 +291,13 @@
     // =======================================================================
     const firebaseConfig = {
         apiKey: "AIzaSyDJySDZ6MaBnCPPVzAEyTUVbYvjByHyC5c",
-  authDomain: "mabirh-6d5f7.firebaseapp.com",
-  databaseURL: "https://mabirh-6d5f7-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "mabirh-6d5f7",
-  storageBucket: "mabirh-6d5f7.firebasestorage.app",
-  messagingSenderId: "249970668573",
-  appId: "1:249970668573:web:f225cf7b4c1e730ab442f4",
-  measurementId: "G-MGR43Z7SY4"
+        authDomain: "mabirh-6d5f7.firebaseapp.com",
+        databaseURL: "https://mabirh-6d5f7-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "mabirh-6d5f7",
+        storageBucket: "mabirh-6d5f7.firebasestorage.app",
+        messagingSenderId: "249970668573",
+        appId: "1:249970668573:web:f225cf7b4c1e730ab442f4",
+        measurementId: "G-MGR43Z7SY4"
     };
     // =======================================================================
 
@@ -317,7 +317,7 @@
             currentUser = user;
             document.getElementById('userEmailDisplay').innerText = user.email;
             
-            // 1. Cek atau Daftarkan Role di /users/{uid}
+            // 1. Cek atau Daftarkan Role di Realtime Database (/users/{uid})
             const roleRef = ref(db, 'users/' + user.uid);
             onValue(roleRef, (snapshot) => {
                 let roleData = snapshot.val();
@@ -327,14 +327,18 @@
                     set(roleRef, roleData);
                 }
                 
-                currentUserRole = roleData.role;
-                document.getElementById('roleBadge').innerText = roleData.role.toUpperCase();
-                document.getElementById('roleBadge').style.background = roleData.role === 'admin' ? '#e74c3c' : '#2ecc71';
+                // Normalisasi string role menjadi huruf kecil untuk mengantisipasi kesalahan ketik di DB
+                const roleLower = roleData.role ? roleData.role.toLowerCase() : 'pekerja';
+                currentUserRole = roleLower;
+                
+                const roleBadge = document.getElementById('roleBadge');
+                roleBadge.innerText = roleLower.toUpperCase();
+                roleBadge.style.background = roleLower === 'admin' ? '#e74c3c' : '#2ecc71';
 
                 document.getElementById('loginSection').style.display = 'none';
                 document.getElementById('appSection').style.display = 'block';
 
-                if (roleData.role === 'admin') {
+                if (roleLower === 'admin') {
                     initAdminPanel();
                 } else {
                     initPekerjaPanel();
@@ -482,7 +486,9 @@
 
             if (users) {
                 Object.keys(users).forEach(uid => {
-                    if (users[uid].role === 'pekerja') {
+                    // Pastikan pengecekan role aman dari masalah huruf kapital
+                    const uRole = users[uid].role ? users[uid].role.toLowerCase() : 'pekerja';
+                    if (uRole === 'pekerja') {
                         // Ambil sisa saldo pekerja dari node catatanPekerja
                         get(ref(db, `catatanPekerja/${uid}/saldoUtama`)).then((saldoSnap) => {
                             const saldo = saldoSnap.val() || 0;
