@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Pembukuan Pekerja</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans">
+
+    <div id="login-page" class="min-h-screen flex flex-col justify-center items-center p-4">
+        <div class="bg-white p-6 rounded-lg shadow-md w-full max-w-sm">
+            <h2 class="text-2xl font-bold mb-6 text-center text-blue-600">Masuk Akun</h2>
+            <input type="email" id="email" placeholder="Email" class="w-full mb-4 p-3 border rounded">
+            <input type="password" id="password" placeholder="Password" class="w-full mb-6 p-3 border rounded">
+            <button id="btn-login" class="w-full bg-blue-600 text-white p-3 rounded font-bold hover:bg-blue-700">Masuk</button>
+            <p id="login-error" class="text-red-500 text-sm mt-2 hidden"></p>
+        </div>
+    </div>
+
+    <div id="pekerja-page" class="hidden min-h-screen p-4 pb-20">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-xl font-bold">Halo, <span id="nama-pekerja">Pekerja</span></h1>
+            <button id="btn-logout-pekerja" class="text-red-500 text-sm font-bold">Keluar</button>
+        </div>
+
+        <div class="bg-blue-600 text-white p-5 rounded-lg shadow-lg mb-6">
+            <p class="text-sm opacity-80">Saldo Utama</p>
+            <h2 class="text-3xl font-bold">Rp <span id="saldo-pekerja">0</span></h2>
+        </div>
+
+        <div class="bg-white p-5 rounded-lg shadow-md mb-6">
+            <h3 class="font-bold mb-4 border-b pb-2">Laporan Pekerjaan Baru</h3>
+            
+            <label class="block text-sm mb-1">Jumlah Terpal (Rp 2.000/pc)</label>
+            <input type="number" id="input-terpal" placeholder="0" class="w-full mb-3 p-2 border rounded">
+
+            <label class="block text-sm mb-1">Jumlah Packing (Rp 25/pc)</label>
+            <input type="number" id="input-packing" placeholder="0" class="w-full mb-3 p-2 border rounded">
+
+            <label class="block text-sm mb-1">Tanggal Pengerjaan (Kosongkan untuk hari ini)</label>
+            <input type="date" id="input-tanggal" class="w-full mb-4 p-2 border rounded">
+
+            <button id="btn-kirim-kerja" class="w-full bg-green-500 text-white p-3 rounded font-bold">Kirim Laporan</button>
+        </div>
+
+        <div class="bg-white p-5 rounded-lg shadow-md">
+            <h3 class="font-bold mb-2">Uang Jajan Bulanan</h3>
+            <p class="text-sm text-gray-500 mb-4">Akumulasi uang jajan saat ini menunggu akhir bulan.</p>
+            <button id="btn-cek-jajan" class="w-full border border-blue-500 text-blue-500 p-2 rounded">Cek / Ajukan Uang Jajan</button>
+        </div>
+    </div>
+
+    <div id="admin-page" class="hidden min-h-screen p-4 bg-gray-200 pb-20">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">Panel Admin</h1>
+            <button id="btn-logout-admin" class="text-red-500 text-sm font-bold bg-white px-3 py-1 rounded shadow">Keluar</button>
+        </div>
+
+        <div class="bg-white p-4 rounded-lg shadow-md">
+            <h3 class="font-bold mb-4 text-orange-600">Menunggu Persetujuan</h3>
+            <div id="list-pending">
+                <p class="text-sm text-gray-500">Tidak ada permintaan tertunda.</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // 1. IMPORT FIREBASE
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, increment, getDoc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // !!! GANTI DENGAN CONFIG FIREBASE KAMU !!!
+        const firebaseConfig = {
+            apiKey: "API_KEY_KAMU",
+            authDomain: "PROYEK_KAMU.firebaseapp.com",
+            projectId: "PROYEK_KAMU",
+            storageBucket: "PROYEK_KAMU.appspot.com",
+            messagingSenderId: "SENDER_ID",
+            appId: "APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // State Pengguna Saat Ini
+        let currentUserData = null;
+
+        // FUNGSI BANTUAN: Format Tanggal dd-mm-yyyy
+        function formatTanggal(dateInput) {
+            let tgl = dateInput ? new Date(dateInput) : new Date();
+            let dd = String(tgl.getDate()).padStart(2, '0');
+            let mm = String(tgl.getMonth() + 1).padStart(2, '0');
+            let yyyy = tgl.getFullYear();
+            return `${dd}-${mm}-${yyyy}`;
+        }
+
+        // 2. LOGIKA LOGIN & PERPINDAHAN HALAMAN
+        const loginPage = document.getElementById('login-page');
+        const pekerjaPage = document.getElementById('pekerja-page');
+        const adminPage = document.getElementById('admin-page');
+
+        document.getElementById('btn-login').addEventListener('click', async () => {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                document.getElementById('login-error').innerText = "Gagal masuk. Cek email/password.";
+                document.getElementById('login-error').classList.remove('hidden');
+            }
+        });
+
+        // Logout untuk kedua role
+        const prosesLogout = () => signOut(auth);
+        document.getElementById('btn-logout-pekerja').addEventListener('click', prosesLogout);
+        document.getElementById('btn-logout-admin').addEventListener('click', prosesLogout);
+
+        // Memantau Status Login (Realtime)
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                loginPage.classList.add('hidden');
+                
+                // Ambil data role dari Firestore
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                if (userDoc.exists()) {
+                    currentUserData = userDoc.data();
+                    currentUserData.uid = user.uid;
+
+                    if (currentUserData.role === 'admin') {
+                        adminPage.classList.remove('hidden');
+                        loadAdminDashboard();
+                    } else {
+                        pekerjaPage.classList.remove('hidden');
+                        loadPekerjaDashboard();
+                    }
+                }
+            } else {
+                loginPage.classList.remove('hidden');
+                pekerjaPage.classList.add('hidden');
+                adminPage.classList.add('hidden');
+                currentUserData = null;
+            }
+        });
+
+        // 3. LOGIKA DASHBOARD PEKERJA
+        function loadPekerjaDashboard() {
+            document.getElementById('nama-pekerja').innerText = currentUserData.nama;
+            
+            // Listener Realtime untuk Saldo Pekerja
+            onSnapshot(doc(db, "users", currentUserData.uid), (doc) => {
+                document.getElementById('saldo-pekerja').innerText = doc.data().saldo_utama.toLocaleString('id-ID');
+            });
+
+            // Tombol Kirim Pekerjaan
+            document.getElementById('btn-kirim-kerja').onclick = async () => {
+                const terpal = parseInt(document.getElementById('input-terpal').value) || 0;
+                const packing = parseInt(document.getElementById('input-packing').value) || 0;
+                const tanggalRaw = document.getElementById('input-tanggal').value;
+                
+                if (terpal === 0 && packing === 0) return alert("Masukkan jumlah pekerjaan!");
+
+                const totalUpah = (terpal * 2000) + (packing * 25);
+                const tanggalFinal = formatTanggal(tanggalRaw); // Akan otomatis hari ini jika kosong
+
+                try {
+                    await addDoc(collection(db, "pekerjaan"), {
+                        workerId: currentUserData.uid,
+                        namaPekerja: currentUserData.nama,
+                        terpal: terpal,
+                        packing: packing,
+                        total_upah: totalUpah,
+                        tanggal: tanggalFinal,
+                        status: "pending",
+                        timestamp: new Date()
+                    });
+                    alert("Laporan terkirim! Menunggu persetujuan Admin.");
+                    document.getElementById('input-terpal').value = '';
+                    document.getElementById('input-packing').value = '';
+                    document.getElementById('input-tanggal').value = '';
+                } catch (e) {
+                    alert("Gagal mengirim laporan.");
+                }
+            };
+
+            // Tombol Cek Uang Jajan (Simulasi Sederhana Akhir Bulan)
+            document.getElementById('btn-cek-jajan').onclick = async () => {
+                let pilihan = confirm("Pilih OK untuk SIMPAN ke Saldo Utama, atau CANCEL untuk TERIMA tunai dari Admin.");
+                let jenisPengajuan = pilihan ? "simpan" : "terima";
+                
+                // Asumsi pengajuan uang jajan 30 hari (Rp 150.000)
+                await addDoc(collection(db, "uang_jajan"), {
+                    workerId: currentUserData.uid,
+                    namaPekerja: currentUserData.nama,
+                    total_uang: 150000,
+                    pilihan: jenisPengajuan,
+                    status: "pending",
+                    timestamp: new Date()
+                });
+                alert("Pengajuan uang jajan terkirim ke Admin.");
+            };
+        }
+
+        // 4. LOGIKA DASHBOARD ADMIN (REALTIME)
+        function loadAdminDashboard() {
+            const listPending = document.getElementById('list-pending');
+
+            // Memantau koleksi 'pekerjaan' yang berstatus 'pending'
+            const qPekerjaan = query(collection(db, "pekerjaan"), where("status", "==", "pending"));
+            onSnapshot(qPekerjaan, (snapshot) => {
+                listPending.innerHTML = ''; // Kosongkan list
+                if (snapshot.empty) {
+                    listPending.innerHTML = '<p class="text-sm text-gray-500">Tidak ada data.</p>';
+                    return;
+                }
+
+                snapshot.forEach((docSnap) => {
+                    let data = docSnap.data();
+                    let div = document.createElement('div');
+                    div.className = "border-b border-gray-200 py-3 flex justify-between items-center";
+                    div.innerHTML = `
+                        <div>
+                            <p class="font-bold text-sm">${data.namaPekerja}</p>
+                            <p class="text-xs text-gray-600">Tgl: ${data.tanggal} | Terpal: ${data.terpal}, Packing: ${data.packing}</p>
+                            <p class="text-sm font-bold text-green-600">Upah: Rp ${data.total_upah.toLocaleString('id-ID')}</p>
+                        </div>
+                        <button class="bg-blue-500 text-white px-3 py-1 rounded text-sm btn-setujui" 
+                                data-id="${docSnap.id}" data-worker="${data.workerId}" data-upah="${data.total_upah}">
+                            Setujui
+                        </button>
+                    `;
+                    listPending.appendChild(div);
+                });
+
+                // Pasang event listener ke semua tombol Setujui
+                document.querySelectorAll('.btn-setujui').forEach(btn => {
+                    btn.onclick = async (e) => {
+                        const jobId = e.target.getAttribute('data-id');
+                        const workerId = e.target.getAttribute('data-worker');
+                        const upah = parseInt(e.target.getAttribute('data-upah'));
+
+                        // 1. Ubah status pekerjaan jadi approved
+                        await updateDoc(doc(db, "pekerjaan", jobId), { status: "approved" });
+                        
+                        // 2. Tambah saldo pekerja menggunakan increment Firestore
+                        await updateDoc(doc(db, "users", workerId), {
+                            saldo_utama: increment(upah)
+                        });
+                    };
+                });
+            });
+        }
+    </script>
+</body>
+</html>
