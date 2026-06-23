@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catatan Pendapatan Pekerja (Firebase Realtime)</title>
+    <title>Catatan Pendapatan Pekerja (Firebase Auth + Realtime)</title>
     <style>
         :root {
             --primary: #4361ee;
@@ -34,6 +34,28 @@
             margin: 0 auto;
         }
 
+        /* --- TAMPILAN HALAMAN LOGIN --- */
+        .login-container {
+            max-width: 400px;
+            margin: 60px auto;
+            background: var(--card);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+
+        .login-container h2 {
+            margin-bottom: 8px;
+            font-size: 22px;
+        }
+
+        .login-container p {
+            color: var(--text-light);
+            font-size: 14px;
+            margin-bottom: 25px;
+        }
+
         /* Card Saldo */
         .balance-card {
             background: linear-gradient(135deg, var(--primary), #3a0ca3);
@@ -56,6 +78,14 @@
             border-radius: 10px;
         }
 
+        .user-email-info {
+            font-size: 11px;
+            opacity: 0.8;
+            margin-top: -3px;
+            margin-bottom: 10px;
+            word-break: break-all;
+        }
+
         .balance-card h2 {
             font-size: 14px;
             font-weight: 500;
@@ -66,8 +96,20 @@
         .balance-card .amount {
             font-size: 32px;
             font-weight: bold;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
+
+        .btn-logout {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .btn-logout:hover { background: rgba(255, 255, 255, 0.3); }
 
         /* Menu Grid */
         .menu-grid {
@@ -169,10 +211,11 @@
             font-size: 13px;
             color: var(--text-light);
             margin-bottom: 5px;
+            text-align: left;
         }
         .form-group input {
             width: 100%;
-            padding: 10px 12px;
+            padding: 11px 12px;
             border: 1px solid #ddd;
             border-radius: 8px;
             font-size: 14px;
@@ -208,11 +251,31 @@
 </head>
 <body>
 
-<div class="container">
+<div id="loginSection" class="login-container">
+    <h2>Selamat Datang</h2>
+    <p>Silahkan masuk menggunakan akun Anda</p>
+    
+    <div class="form-group">
+        <label>Email (Gmail)</label>
+        <input type="email" id="loginEmail" placeholder="contoh@gmail.com">
+    </div>
+    <div class="form-group">
+        <label>Kata Sandi</label>
+        <input type="password" id="loginPassword" placeholder="Masukkan sandi">
+    </div>
+    
+    <button class="btn btn-submit" style="width: 100%; margin-top: 10px;" onclick="window.submitLogin()">
+        Masuk Aplikasi
+    </button>
+</div>
+
+<div id="appSection" class="container" style="display: none;">
     <div class="balance-card">
         <div class="sync-status" id="syncStatus">Memuat...</div>
+        <div class="user-email-info" id="userEmailDisplay">-</div>
         <h2>Saldo Utama</h2>
         <div class="amount" id="saldoDisplay">Rp 0</div>
+        <button class="btn-logout" onclick="window.submitLogout()">👋 Keluar Akun</button>
     </div>
 
     <div id="jajanInfoContainer" class="jajan-info" style="display: none;">
@@ -314,12 +377,14 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
     import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+    // Menambahkan modul Firebase Auth
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
     // =======================================================================
-    // SILAHKAN GANTI DENGAN FIREBASE CONFIG MILIK ANDA DI SINI
+    // SILAHKAN GANTI DENGAN FIREBASE CONFIG MILIK ANDA DI SINI (SAMA SEPERTI APP 1)
     // =======================================================================
     const firebaseConfig = {
-        apiKey: "AIzaSyDJySDZ6MaBnCPPVzAEyTUVbYvjByHyC5c",
+            apiKey: "AIzaSyDJySDZ6MaBnCPPVzAEyTUVbYvjByHyC5c",
   authDomain: "mabirh-6d5f7.firebaseapp.com",
   databaseURL: "https://mabirh-6d5f7-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "mabirh-6d5f7",
@@ -333,31 +398,91 @@
     // Inisialisasi Firebase
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    const dbRef = ref(db, 'catatanPekerja/user1'); // Path penyimpanan database Anda
+    const auth = getAuth(app); // Inisialisasi Auth
 
     // Variabel Data & Konfigurasi
     const HARGA = { terpal: 2000, packing: 25, jajanPerHari: 5000 };
     let appData = { saldoUtama: 0, jajanStartDate: null, jajanLastClaimDate: null, history: [] };
     let jajanPendingData = null;
+    let dbRef = null; // Akan diset dinamis setelah login
 
-    // --- REAL-TIME LISTENER FROM FIREBASE ---
-    onValue(dbRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-            appData = data;
-            if (!appData.history) appData.history = [];
+    // --- PEMERIKSA STATUS LOGIN (AUTH LISTENER) ---
+    onAuthStateChanged(auth, (user) => {
+        const loginSection = document.getElementById('loginSection');
+        const appSection = document.getElementById('appSection');
+
+        if (user) {
+            // JIKA USER BERHASIL LOGIN
+            loginSection.style.display = 'none';
+            appSection.style.display = 'block';
+            document.getElementById('userEmailDisplay').innerText = `Logged in: ${user.email}`;
+
+            // Arahkan database secara dinamis berdasarkan UID User yang login
+            dbRef = ref(db, 'catatanPekerja/' + user.uid);
+
+            // Pasang Listener Real-time Database khusus UID ini
+            onValue(dbRef, (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    appData = data;
+                    if (!appData.history) appData.history = [];
+                } else {
+                    // Reset data jika user baru/belum punya records data sama sekali
+                    appData = { saldoUtama: 0, jajanStartDate: null, jajanLastClaimDate: null, history: [] };
+                }
+                
+                document.getElementById('syncStatus').innerText = 'Sinkron ✔️';
+                updateUI();
+                checkNotifUangJajanAkhirBulan();
+            }, (error) => {
+                document.getElementById('syncStatus').innerText = 'Error ❌';
+                console.error("Firebase database error: ", error);
+            });
+
+        } else {
+            // JIKA USER BELUM LOGIN / LOGOUT
+            loginSection.style.display = 'block';
+            appSection.style.display = 'none';
+            dbRef = null;
         }
-        
-        document.getElementById('syncStatus').innerText = 'Sinkron ✔️';
-        updateUI();
-        checkNotifUangJajanAkhirBulan();
-    }, (error) => {
-        document.getElementById('syncStatus').innerText = 'Error ❌';
-        console.error("Firebase read error: ", error);
     });
+
+    // --- FUNGSI PROSES AUTH (LOGIN & LOGOUT) ---
+    window.submitLogin = function() {
+        const email = document.getElementById('loginEmail').value.trim();
+        const sandi = document.getElementById('loginPassword').value;
+
+        if (!email || !sandi) return alert("Harap isi email dan sandi Anda!");
+
+        document.getElementById('syncStatus').innerText = 'Memverifikasi...';
+        
+        signInWithEmailAndPassword(auth, email, sandi)
+            .then((userCredential) => {
+                // Clear input form setelah sukses
+                document.getElementById('loginEmail').value = '';
+                document.getElementById('loginPassword').value = '';
+            })
+            .catch((error) => {
+                let pesanError = "Gagal masuk. Periksa kembali email & sandi Anda.";
+                if (error.code === 'auth/user-not-found') pesanError = "Akun tidak terdaftar!";
+                if (error.code === 'auth/wrong-password') pesanError = "Sandi yang Anda masukkan salah!";
+                alert(pesanError);
+            });
+    }
+
+    window.submitLogout = function() {
+        if (confirm("Apakah Anda yakin ingin keluar dari akun?")) {
+            signOut(auth).then(() => {
+                alert("Berhasil keluar akun!");
+            }).catch((error) => {
+                alert("Gagal Keluar: " + error.message);
+            });
+        }
+    }
 
     // Fungsi simpan data ke Firebase
     function saveToFirebase() {
+        if (!dbRef) return;
         document.getElementById('syncStatus').innerText = 'Menyimpan...';
         set(dbRef, appData).catch((error) => {
             alert("Gagal menyimpan ke server: " + error.message);
@@ -419,7 +544,7 @@
         }
     }
 
-    // --- BINDING FUNGSI KE OBJECT WINDOW (Agar bisa dibaca Onclick HTML) ---
+    // --- BINDING FUNGSI KE OBJECT WINDOW MENGGUNAKAN GLOBAL AKSES ---
     window.openModal = function(id) {
         const modal = document.getElementById(id);
         modal.style.display = 'flex';
