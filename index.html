@@ -124,6 +124,7 @@
         .form-group { margin-bottom: 15px; text-align: left; }
         .form-group label { display: block; font-size: 13px; color: var(--text-light); margin-bottom: 5px; }
         .form-group input { width: 100%; padding: 11px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
+        .form-group select { width: 100%; padding: 11px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; background: white; }
 
         /* Modal / Pop-up */
         .modal-overlay {
@@ -139,6 +140,7 @@
         .btn-submit { background: var(--primary); color: white; }
 
         .jajan-info { background: #e0f7fa; border-radius: 12px; padding: 15px; margin-bottom: 20px; font-size: 14px; }
+        .total-box { background: #eaeafb; border-radius: 8px; padding: 10px 15px; font-size: 14px; font-weight: bold; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;}
     </style>
 </head>
 <body>
@@ -201,17 +203,55 @@
         </div>
 
         <div id="adminPanel" style="display: none;">
+            <div style="margin-bottom: 15px;">
+                <button class="btn btn-submit" style="width: 100%;" onclick="window.openModal('modalTambahUser')">➕ Tambah Akun Pengguna Baru</button>
+            </div>
+
             <h3 class="section-title">🚨 Butuh Persetujuan Anda</h3>
             <div class="list-wrapper" id="adminApprovalList">
                 <div class="item-row"><p>Bersih! Tidak ada permintaan tertunda.</p></div>
             </div>
 
-            <h3 class="section-title">👥 Daftar Semua Pekerja</h3>
+            <h3 class="section-title">💰 Riwayat Persetujuan Pembayaran</h3>
+            <div class="total-box">
+                <span>Total Dana Keluar:</span>
+                <span id="adminTotalPembayaran" style="color: var(--danger);">Rp 0</span>
+            </div>
+            <div class="list-wrapper" id="adminPaymentHistoryList" style="max-height: 250px; overflow-y: auto;">
+                <div class="item-row"><p style="color:#aaa;">Belum ada pembayaran disetujui.</p></div>
+            </div>
+
+            <h3 class="section-title">👥 Daftar Semua Pengguna</h3>
             <div class="list-wrapper" id="adminWorkersList">
                 <div class="item-row"><p>Memuat daftar pekerja...</p></div>
             </div>
         </div>
 
+    </div>
+</div>
+
+<div class="modal-overlay" id="modalTambahUser">
+    <div class="modal">
+        <div class="modal-header">Tambah Pengguna Baru</div>
+        <div class="form-group">
+            <label>Email Pengguna (Gmail)</label>
+            <input type="email" id="newUserEmail" placeholder="nama@gmail.com">
+        </div>
+        <div class="form-group">
+            <label>UID Firebase (Dapatkan dari Firebase Auth)</label>
+            <input type="text" id="newUserUid" placeholder="Masukkan User UID">
+        </div>
+        <div class="form-group">
+            <label>Pilih Hak Akses / Role</label>
+            <select id="newUserRole">
+                <option value="pekerja">Pekerja</option>
+                <option value="admin">Admin</option>
+            </select>
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-cancel" onclick="window.closeModal('modalTambahUser')">Batal</button>
+            <button class="btn btn-submit" onclick="window.adminTambahUserManual()">Simpan Akun</button>
+        </div>
     </div>
 </div>
 
@@ -273,10 +313,12 @@
         <button class="sm-btn approve" style="width:100%; padding:10px; margin-bottom:15px;" onclick="window.adminUpdateSaldoLangsung()">💾 Simpan Perubahan Saldo</button>
         
         <h4 style="font-size:14px; margin-bottom:5px; color:var(--text-light)">Riwayat Transaksi Pekerja:</h4>
-        <div class="list-wrapper" id="detailHistoryList" style="max-height: 200px; overflow-y: auto;"></div>
+        <div class="list-wrapper" id="detailHistoryList" style="max-height: 150px; overflow-y: auto; margin-bottom:15px;"></div>
         
+        <button class="btn" style="background: var(--danger); color: white; width: 100%; margin-bottom: 10px;" id="btnHapusUserGlobal">🗑️ Hapus Akun Pengguna</button>
+
         <div class="btn-group">
-            <button class="btn btn-cancel" onclick="window.closeModal('modalDetailPekerja')">Tutup</button>
+            <button class="btn btn-cancel" style="width: 100%;" onclick="window.closeModal('modalDetailPekerja')">Tutup</button>
         </div>
     </div>
 </div>
@@ -309,7 +351,7 @@
     let currentUser = null;
     let currentUserRole = 'pekerja';
     let myData = { saldoUtama: 0, jajanStartDate: null, jajanLastClaimDate: null, history: [] };
-    let selectedWorkerUidGlobal = null; // Menyimpan ID pekerja saat admin melihat detail
+    let selectedWorkerUidGlobal = null;
 
     // --- PEMERIKSA AUTH & DISTRIBUSI PANEL ROLE ---
     onAuthStateChanged(auth, (user) => {
@@ -317,23 +359,19 @@
             currentUser = user;
             document.getElementById('userEmailDisplay').innerText = user.email;
             
-            // 1. Cek atau Daftarkan Role di /users/{uid}
             const roleRef = ref(db, 'users/' + user.uid);
             onValue(roleRef, (snapshot) => {
                 let roleData = snapshot.val();
                 
-                // --- PERBAIKAN DI SINI ---
-                // Memeriksa apakah user yang login memiliki email silmeriaksdk@gmail.com
+                // Aturan email admin khusus silmeriaksdk@gmail.com
                 if (user.email && user.email.toLowerCase() === 'silmeriaksdk@gmail.com') {
                     roleData = { email: user.email, role: 'admin' };
-                    set(roleRef, roleData); // Menulis / mengunci status admin di database secara otomatis
+                    set(roleRef, roleData);
                 } else if (!roleData) {
-                    // Jika user baru dan bukan email target, otomatis jadikan pekerja
                     roleData = { email: user.email, role: 'pekerja' };
                     set(roleRef, roleData);
                 }
                 
-                // --- PERBAIKAN UTAMA: Ambil nilai role dan paksa ke huruf kecil semua ---
                 const roleLower = roleData.role ? roleData.role.toLowerCase() : 'pekerja';
                 currentUserRole = roleLower;
 
@@ -350,7 +388,6 @@
                 }
             });
         } else {
-            // Logout state
             document.getElementById('loginSection').style.display = 'block';
             document.getElementById('appSection').style.display = 'none';
             currentUser = null;
@@ -364,7 +401,6 @@
         document.getElementById('pekerjaPanel').style.display = 'block';
         document.getElementById('pekerjaBalanceView').style.display = 'block';
 
-        // Listen Saldo dan Riwayat Sendiri
         const myDataRef = ref(db, 'catatanPekerja/' + currentUser.uid);
         onValue(myDataRef, (snapshot) => {
             const val = snapshot.val();
@@ -379,7 +415,6 @@
             checkNotifUangJajanAkhirBulan();
         });
 
-        // Listen Permintaan Aktif Sendiri
         onValue(ref(db, 'requests'), (snapshot) => {
             const reqs = snapshot.val();
             const container = document.getElementById('pekerjaRequestList');
@@ -426,7 +461,7 @@
                             <h4>${item.title}</h4>
                             <p>${item.date} | ${item.desc}</p>
                         </div>
-                        <div class="history-amount ${colorClass}" style="font-weight:bold;">${sign} ${formatRp(item.amount)}</div>
+                        <div class="history-amount ${colorClass}" style="font-weight:bold; color: ${item.type === 'in' ? 'var(--success)' : 'var(--danger)'};">${sign} ${formatRp(item.amount)}</div>
                     </div>
                 `;
             });
@@ -450,7 +485,7 @@
         document.getElementById('adminBalanceView').style.display = 'block';
         document.getElementById('syncStatus').innerText = 'Admin Server ✔️';
 
-        // 1. Listen Semua Permintaan Pending di Aplikasi
+        // 1. Listen Antrean Permintaan Pending
         onValue(ref(db, 'requests'), (snapshot) => {
             const data = snapshot.val();
             const container = document.getElementById('adminApprovalList');
@@ -483,7 +518,33 @@
             if(pendingCount === 0) container.innerHTML = '<div class="item-row"><p style="color:var(--success);">Bersih! Tidak ada permintaan tertunda.</p></div>';
         });
 
-        // 2. Listen Semua Daftar Pekerja Terdaftar
+        // 2. Listen Riwayat Semua Pembayaran Keluar yang Disetujui
+        onValue(ref(db, 'riwayatPembayaran'), (snapshot) => {
+            const data = snapshot.val();
+            const container = document.getElementById('adminPaymentHistoryList');
+            container.innerHTML = '';
+            let totalPengeluaran = 0;
+
+            if (data) {
+                Object.keys(data).reverse().forEach(key => {
+                    const h = data[key];
+                    totalPengeluaran += h.amount;
+                    container.innerHTML += `
+                        <div class="item-row">
+                            <div class="item-info">
+                                <h4 style="text-transform: capitalize; color: var(--danger);">${h.workerName} &bull; ${h.title}</h4>
+                                <p>${h.date} | ${h.desc}</p>
+                            </div>
+                            <div style="font-weight: bold; color: var(--danger);">${formatRp(h.amount)}</div>
+                        </div>
+                    `;
+                });
+            }
+            document.getElementById('adminTotalPembayaran').innerText = formatRp(totalPengeluaran);
+            if(!data) container.innerHTML = '<div class="item-row"><p style="color:#aaa;">Belum ada pembayaran disetujui.</p></div>';
+        });
+
+        // 3. Listen Semua Daftar Pengguna Terdaftar
         onValue(ref(db, 'users'), (snapshot) => {
             const users = snapshot.val();
             const container = document.getElementById('adminWorkersList');
@@ -491,33 +552,29 @@
 
             if (users) {
                 Object.keys(users).forEach(uid => {
-                    // --- PERBAIKAN: Menjaga sistem list admin aman dari salah pengetikan huruf kapital ---
                     const uRole = users[uid].role ? users[uid].role.toLowerCase() : 'pekerja';
-                    if (uRole === 'pekerja') {
-                        // Ambil sisa saldo pekerja dari node catatanPekerja
-                        get(ref(db, `catatanPekerja/${uid}/saldoUtama`)).then((saldoSnap) => {
-                            const saldo = saldoSnap.val() || 0;
-                            const name = users[uid].email.split('@')[0];
-                            
-                            // Cek apakah item HTML pekerja tersebut sudah ada untuk menghindari tumpang tindih render async
-                            const existingRow = document.getElementById(`worker-row-${uid}`);
-                            const rowHtml = `
-                                <div class="item-row" id="worker-row-${uid}">
-                                    <div class="item-info">
-                                        <h4 style="text-transform: capitalize;">${name}</h4>
-                                        <p>${users[uid].email}</p>
-                                        <p style="font-weight:bold; color:var(--success); margin-top:3px;">Saldo: ${formatRp(saldo)}</p>
-                                    </div>
-                                    <button class="sm-btn view" onclick="window.adminViewWorkerDetail('${uid}', '${name}')">Kelola Akun</button>
+                    get(ref(db, `catatanPekerja/${uid}/saldoUtama`)).then((saldoSnap) => {
+                        const saldo = saldoSnap.val() || 0;
+                        const name = users[uid].email.split('@')[0];
+                        
+                        const existingRow = document.getElementById(`worker-row-${uid}`);
+                        const badgeColor = uRole === 'admin' ? 'var(--danger)' : 'var(--success)';
+                        const rowHtml = `
+                            <div class="item-row" id="worker-row-${uid}">
+                                <div class="item-info">
+                                    <h4 style="text-transform: capitalize;">${name} <span style="font-size:10px; padding:2px 6px; border-radius:4px; background:${badgeColor}; color:white; margin-left:5px;">${uRole.toUpperCase()}</span></h4>
+                                    <p>${users[uid].email}</p>
+                                    ${uRole === 'pekerja' ? `<p style="font-weight:bold; color:var(--success); margin-top:3px;">Saldo: ${formatRp(saldo)}</p>` : ''}
                                 </div>
-                            `;
-                            if (existingRow) {
-                                existingRow.outerHTML = rowHtml;
-                            } else {
-                                container.innerHTML += rowHtml;
-                            }
-                        });
-                    }
+                                <button class="sm-btn view" onclick="window.adminViewWorkerDetail('${uid}', '${name}', '${uRole}')">Kelola Akun</button>
+                            </div>
+                        `;
+                        if (existingRow) {
+                            existingRow.outerHTML = rowHtml;
+                        } else {
+                            container.innerHTML += rowHtml;
+                        }
+                    });
                 });
             }
         });
@@ -562,6 +619,17 @@
                         amount: reqData.amount,
                         date: reqData.date
                     });
+
+                    // Arsipkan Transaksi Pengeluaran ke node Khusus "riwayatPembayaran" untuk Admin
+                    const globalPaymentRef = push(ref(db, 'riwayatPembayaran'));
+                    set(globalPaymentRef, {
+                        workerUid: workerUid,
+                        workerName: reqData.workerName,
+                        title: reqData.title,
+                        desc: reqData.desc,
+                        amount: reqData.amount,
+                        date: reqData.date
+                    });
                 }
 
                 if (reqData.jajanNewClaimDate) {
@@ -572,14 +640,14 @@
 
                 set(workerDataRef, wData).then(() => {
                     remove(reqRef);
-                    alert(`Permintaan ${reqData.workerName} berhasil disetujui! Saldo diperbarui.`);
+                    alert(`Permintaan ${reqData.workerName} berhasil disetujui!`);
                 });
             });
         });
     }
 
-    // --- FITUR AKSES PENUH ADMIN ---
-    window.adminViewWorkerDetail = function(uid, name) {
+    // --- FITUR AKSES PENUH ADMIN (KELOLA AKUN) ---
+    window.adminViewWorkerDetail = function(uid, name, role) {
         selectedWorkerUidGlobal = uid;
         document.getElementById('detailNamaPekerja').innerText = "Kelola Akun: " + name.toUpperCase();
         
@@ -595,13 +663,18 @@
                     listHistory.innerHTML += `
                         <div style="font-size:12px; padding:6px; border-bottom:1px solid #f0f0f0; display:flex; justify-content:space-between;">
                             <span>${h.date} - ${h.title}</span>
-                            <span style="font-weight:bold;">${formatRp(h.amount)}</span>
+                            <span style="font-weight:bold; color:${h.type==='in'?'green':'red'}">${formatRp(h.amount)}</span>
                         </div>
                     `;
                 });
             } else {
                 listHistory.innerHTML = '<p style="padding:10px; font-size:12px; color:#aaa;">Belum ada riwayat</p>';
             }
+
+            // Bind fungsi hapus user
+            document.getElementById('btnHapusUserGlobal').onclick = function() {
+                window.adminHapusUserManual(uid, name);
+            };
 
             window.openModal('modalDetailPekerja');
         });
@@ -617,6 +690,43 @@
         });
     }
 
+    // FITUR BARU: Tambah Pengguna Manual
+    window.adminTambahUserManual = function() {
+        const email = document.getElementById('newUserEmail').value.trim();
+        const uid = document.getElementById('newUserUid').value.trim();
+        const role = document.getElementById('newUserRole').value;
+
+        if(!email || !uid) return alert("Harap isi email dan UID Firebase secara lengkap!");
+
+        // 1. Simpan hak akses di tabel users
+        set(ref(db, 'users/' + uid), {
+            email: email,
+            role: role
+        }).then(() => {
+            // 2. Buat struktur default keuangan di tabel catatanPekerja
+            set(ref(db, 'catatanPekerja/' + uid), {
+                saldoUtama: 0,
+                jajanStartDate: null,
+                jajanLastClaimDate: null,
+                history: []
+            }).then(() => {
+                alert(`Akun baru dengan Email ${email} berhasil didaftarkan sebagai ${role.toUpperCase()}!`);
+                window.closeModal('modalTambahUser');
+            });
+        }).catch(err => alert("Gagal mendaftarkan user: " + err.message));
+    }
+
+    // FITUR BARU: Hapus Pengguna Manual
+    window.adminHapusUserManual = function(uid, name) {
+        if(confirm(`Apakah Anda yakin ingin menghapus seluruh data pengguna "${name.toUpperCase()}" secara permanen dari sistem database?\n(Tindakan ini tidak dapat dibatalkan)`)) {
+            remove(ref(db, 'users/' + uid)).then(() => {
+                remove(ref(db, 'catatanPekerja/' + uid)).then(() => {
+                    alert("Pengguna berhasil dihapus secara permanen dari database.");
+                    window.closeModal('modalDetailPekerja');
+                });
+            }).catch(err => alert("Gagal menghapus pengguna: " + err.message));
+        }
+    }
 
     // --- WORKER: SUBMIT AJUAN KE ANTRIAN (REQUESTS) ---
     window.submitPekerjaanRequest = function() {
