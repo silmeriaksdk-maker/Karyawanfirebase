@@ -321,8 +321,14 @@
             const roleRef = ref(db, 'users/' + user.uid);
             onValue(roleRef, (snapshot) => {
                 let roleData = snapshot.val();
-                if (!roleData) {
-                    // Jika user baru, otomatis jadikan pekerja
+                
+                // --- PERBAIKAN DI SINI ---
+                // Memeriksa apakah user yang login memiliki email silmeriaksdk@gmail.com
+                if (user.email && user.email.toLowerCase() === 'silmeriaksdk@gmail.com') {
+                    roleData = { email: user.email, role: 'admin' };
+                    set(roleRef, roleData); // Menulis / mengunci status admin di database secara otomatis
+                } else if (!roleData) {
+                    // Jika user baru dan bukan email target, otomatis jadikan pekerja
                     roleData = { email: user.email, role: 'pekerja' };
                     set(roleRef, roleData);
                 }
