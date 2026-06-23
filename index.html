@@ -3,294 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Manajemen Pekerja (Admin & Pekerja)</title>
+    <title>Sistem Manajemen Kerja</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
-        :root {
-            --primary: #4361ee;
-            --success: #2ecc71;
-            --danger: #e74c3c;
-            --warning: #f1c40f;
-            --bg: #f8f9fa;
-            --card: #ffffff;
-            --text: #2b2d42;
-            --text-light: #8d99ae;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            background-color: var(--bg);
-            color: var(--text);
-            padding: 15px;
-            padding-bottom: 80px;
-        }
-
-        .container {
-            max-width: 500px;
-            margin: 0 auto;
-        }
-
-        /* --- LOGIN PAGE --- */
-        .login-container {
-            max-width: 400px;
-            margin: 60px auto;
-            background: var(--card);
-            padding: 30px;
-            border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-            text-align: center;
-        }
-        .login-container h2 { margin-bottom: 8px; font-size: 22px; }
-        .login-container p { color: var(--text-light); font-size: 14px; margin-bottom: 25px; }
-
-        /* --- DASHBOARD COMPONENTS --- */
-        .balance-card {
-            background: linear-gradient(135deg, var(--primary), #3a0ca3);
-            color: white;
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 8px 15px rgba(67, 97, 238, 0.2);
-            text-align: center;
-            position: relative;
-        }
-        .sync-status {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            font-size: 10px;
-            background: rgba(255,255,255,0.2);
-            padding: 3px 8px;
-            border-radius: 10px;
-        }
-        .role-badge {
-            display: inline-block;
-            background: orange;
-            color: white;
-            padding: 2px 10px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        .user-email-info { font-size: 12px; opacity: 0.8; margin-bottom: 10px; }
-        .balance-card h2 { font-size: 14px; font-weight: 500; opacity: 0.9; margin-bottom: 5px; }
-        .balance-card .amount { font-size: 32px; font-weight: bold; margin-bottom: 12px; }
-        .btn-logout {
-            background: rgba(255, 255, 255, 0.2); border: none; color: white;
-            padding: 5px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600;
-        }
-
-        /* Menu Grid */
-        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-        .menu-btn {
-            background: var(--card); border: none; border-radius: 12px; padding: 15px;
-            font-size: 14px; font-weight: 600; color: var(--text); box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer;
-        }
-        .menu-btn:active { transform: scale(0.98); }
-        .menu-btn.primary { color: var(--primary); }
-        .menu-btn.danger { color: var(--danger); }
-        .menu-btn.success { color: var(--success); }
-
-        /* Lists & Cards General */
-        .section-title { font-size: 16px; margin: 15px 0 10px 0; color: var(--text-light); display: flex; justify-content: space-between; align-items: center; }
-        .list-wrapper { background: var(--card); border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); overflow: hidden; margin-bottom: 20px; }
-        
-        /* Request & History Items */
-        .item-row { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-        .item-row:last-child { border-bottom: none; }
-        .item-info h4 { font-size: 14px; margin-bottom: 3px; }
-        .item-info p { font-size: 12px; color: var(--text-light); }
-        .item-status { font-weight: bold; font-size: 14px; text-align: right; }
-        .status-badge { font-size: 11px; padding: 2px 6px; border-radius: 4px; color: white; font-weight: bold; }
-        .badge-pending { background: var(--warning); color: #7f8c8d; }
-        .badge-approved { background: var(--success); }
-        .badge-rejected { background: var(--danger); }
-
-        /* Action Buttons Inside Rows */
-        .action-container { display: flex; gap: 5px; margin-top: 8px; }
-        .sm-btn { padding: 6px 12px; border: none; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; color: white; }
-        .sm-btn.approve { background: var(--success); }
-        .sm-btn.reject { background: var(--danger); }
-        .sm-btn.view { background: var(--primary); }
-
-        /* Form Controls */
-        .form-group { margin-bottom: 15px; text-align: left; }
-        .form-group label { display: block; font-size: 13px; color: var(--text-light); margin-bottom: 5px; }
-        .form-group input { width: 100%; padding: 11px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
-
-        /* Modal / Pop-up */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5);
-            display: none; justify-content: center; align-items: center; z-index: 1000; padding: 20px;
-        }
-        .modal { background: var(--card); width: 100%; max-width: 400px; border-radius: 16px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); transform: translateY(20px); opacity: 0; transition: all 0.3s ease; }
-        .modal.active { transform: translateY(0); opacity: 1; }
-        .modal-header { font-size: 18px; font-weight: bold; margin-bottom: 15px; text-align: center; }
-        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
-        .btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; }
-        .btn-cancel { background: #eee; color: var(--text); }
-        .btn-submit { background: var(--primary); color: white; }
-
-        .jajan-info { background: #e0f7fa; border-radius: 12px; padding: 15px; margin-bottom: 20px; font-size: 14px; }
+        .hidden { display: none; }
     </style>
 </head>
-<body>
+<body class="bg-gray-100 font-sans antialiased">
 
-<div class="container">
-    <div id="loginSection" class="login-container">
-        <h2>Sistem Keuangan</h2>
-        <p>Silahkan masuk menggunakan akun Anda</p>
-        <div class="form-group">
-            <label>Email (Gmail)</label>
-            <input type="email" id="loginEmail" placeholder="contoh@gmail.com">
-        </div>
-        <div class="form-group">
-            <label>Kata Sandi</label>
-            <input type="password" id="loginPassword" placeholder="Masukkan sandi">
-        </div>
-        <button class="btn btn-submit" style="width: 100%;" onclick="window.submitLogin()">Masuk</button>
-    </div>
-
-    <div id="appSection" style="display: none;">
+    <div class="max-w-4xl mx-auto my-10 p-6 bg-white rounded-lg shadow-md">
         
-        <div class="balance-card">
-            <div class="sync-status" id="syncStatus">Memuat...</div>
-            <div class="role-badge" id="roleBadge">Pekerja</div>
-            <div class="user-email-info" id="userEmailDisplay">-</div>
+        <div class="flex justify-between items-center border-b pb-4 mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">Workspace Aplikasi</h1>
+            <div id="user-info" class="hidden flex items-center gap-3">
+                <span id="user-email" class="text-sm text-gray-600 font-medium"></span>
+                <span id="user-badge" class="px-2 py-1 text-xs font-bold rounded"></span>
+                <button id="btn-logout" class="bg-red-500 hover:bg-red-600 text-white text-sm px-3 py-1 rounded transition">Logout</button>
+            </div>
+        </div>
+
+        <div id="page-login" class="text-center py-10">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700">Selamat Datang, Silakan Masuk</h2>
+            <button id="btn-login" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg inline-flex items-center gap-2 transition shadow">
+                <svg class="w-5 h-5" viewBox="0 0 24 24">
+                    <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                    <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
+                    <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+                Masuk dengan Google (Gmail)
+            </button>
+        </div>
+
+        <div id="status-loading" class="hidden text-center py-6 text-gray-500 font-medium">
+            Memuat data status akun Anda...
+        </div>
+
+        <div id="panel-pekerja" class="hidden space-y-6">
+            <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded shadow-sm flex justify-between items-center">
+                <div>
+                    <h3 class="text-sm font-semibold text-blue-700 uppercase tracking-wider">Saldo Utama Anda</h3>
+                    <p class="text-3xl font-extrabold text-blue-900 mt-1">Rp <span id="pekerja-saldo">0</span></p>
+                </div>
+                <div class="text-right">
+                    <span class="text-xs text-gray-500 block">Status Peran</span>
+                    <span class="text-sm font-bold text-gray-700 bg-white px-3 py-1 rounded shadow-sm border inline-block mt-1">Pekerja Tetap</span>
+                </div>
+            </div>
             
-            <div id="pekerjaBalanceView">
-                <h2>Saldo Anda</h2>
-                <div class="amount" id="saldoDisplay">Rp 0</div>
-            </div>
-            <div id="adminBalanceView" style="display: none;">
-                <h2>Panel Kontrol Utama</h2>
-                <div class="amount" style="font-size: 22px; margin: 10px 0;">Mode Admin Aktif</div>
-            </div>
-            
-            <button class="btn-logout" onclick="window.submitLogout()">👋 Keluar Akun</button>
+            <div class="bg-gray-50 p-4 rounded-lg border">
+                <h4 class="font-semibold text-gray-700 mb-2">Menu Pekerja</h4>
+                <p class="text-sm text-gray-600">Sistem mendeteksi Anda sebagai Pekerja. Anda dapat melihat saldo dan memperbarui tugas di sini.</p>
+                </div>
         </div>
 
-        <div id="pekerjaPanel" style="display: none;">
-            <div id="jajanInfoContainer" class="jajan-info" style="display: none;">
-                <strong>Status Uang Jajan:</strong> Aktif<br>
-                <span style="font-size: 12px; color: #006064;" id="jajanTerkumpulText"></span>
+        <div id="panel-admin" class="hidden space-y-6">
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded shadow-sm">
+                <h3 class="text-lg font-bold text-red-700">Panel Kontrol Admin</h3>
+                <p class="text-sm text-red-600">Anda memiliki akses penuh untuk mengatur sistem, memvalidasi pekerjaan, dan melihat seluruh data user.</p>
             </div>
 
-            <div class="menu-grid">
-                <button class="menu-btn primary" onclick="window.openModal('modalPekerjaan')">📝 Ajukan Kerja</button>
-                <button class="menu-btn danger" onclick="window.openModal('modalPenarikan')">💸 Ajukan Tarik Saldo</button>
-                <button class="menu-btn success" style="grid-column: span 2;" onclick="window.openModal('modalJajanSetup')" id="btnSetupJajan">⚙️ Atur Mulai Uang Jajan</button>
-            </div>
-
-            <h3 class="section-title">Status Permintaan Anda</h3>
-            <div class="list-wrapper" id="pekerjaRequestList">
-                <div class="item-row"><p>Tidak ada pengajuan aktif</p></div>
-            </div>
-
-            <h3 class="section-title">Riwayat Saldo Disetujui</h3>
-            <div class="list-wrapper" id="historyList">
-                <div class="item-row"><p>Belum ada transaksi</p></div>
-            </div>
-        </div>
-
-        <div id="adminPanel" style="display: none;">
-            <h3 class="section-title">🚨 Butuh Persetujuan Anda</h3>
-            <div class="list-wrapper" id="adminApprovalList">
-                <div class="item-row"><p>Bersih! Tidak ada permintaan tertunda.</p></div>
-            </div>
-
-            <h3 class="section-title">👥 Daftar Semua Pekerja</h3>
-            <div class="list-wrapper" id="adminWorkersList">
-                <div class="item-row"><p>Memuat daftar pekerja...</p></div>
+            <div class="bg-white border rounded-lg overflow-hidden shadow-sm">
+                <div class="bg-gray-50 px-4 py-3 border-b">
+                    <h4 class="font-semibold text-gray-700">Daftar Semua Pengguna (Database)</h4>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-4 py-2 text-left font-medium text-gray-600">UID / ID Dokumen</th>
+                                <th class="px-4 py-2 text-left font-medium text-gray-600">Role</th>
+                                <th class="px-4 py-2 text-left font-medium text-gray-600">Saldo Utama</th>
+                                <th class="px-4 py-2 text-left font-medium text-gray-600">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-table-body" class="divide-y divide-gray-200">
+                            </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
     </div>
-</div>
 
-<div class="modal-overlay" id="modalPekerjaan">
-    <div class="modal">
-        <div class="modal-header">Ajukan Hasil Pekerjaan</div>
-        <div class="form-group"><label>Jumlah Terpal (Rp 2.000/pcs)</label><input type="number" id="inputTerpal" placeholder="0"></div>
-        <div class="form-group"><label>Jumlah Packing (Rp 25/pcs)</label><input type="number" id="inputPacking" placeholder="0"></div>
-        <div class="form-group"><label>Tanggal Kerja</label><input type="date" id="inputTglKerja"></div>
-        <div class="btn-group">
-            <button class="btn btn-cancel" onclick="window.closeModal('modalPekerjaan')">Batal</button>
-            <button class="btn btn-submit" onclick="window.submitPekerjaanRequest()">Kirim Pengajuan</button>
-        </div>
-    </div>
-</div>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, collection, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-<div class="modal-overlay" id="modalPenarikan">
-    <div class="modal">
-        <div class="modal-header">Ajukan Penarikan Saldo</div>
-        <div class="form-group"><label>Jumlah Penarikan (Rp)</label><input type="number" id="inputTarikAmount" placeholder="Contoh: 50000"></div>
-        <div class="form-group"><label>Tanggal Penarikan</label><input type="date" id="inputTglTarik"></div>
-        <div class="btn-group">
-            <button class="btn btn-cancel" onclick="window.closeModal('modalPenarikan')">Batal</button>
-            <button class="btn btn-submit" onclick="window.submitPenarikanRequest()">Kirim Pengajuan</button>
-        </div>
-    </div>
-</div>
-
-<div class="modal-overlay" id="modalJajanSetup">
-    <div class="modal">
-        <div class="modal-header">Pengaturan Uang Jajan</div>
-        <p style="font-size: 13px; color: #666; margin-bottom: 15px; text-align: center;">Uang jajan Rp 5.000/hari akan dihitung otomatis.</p>
-        <div class="form-group"><label>Tanggal Pertama Penerimaan</label><input type="date" id="inputTglJajan"></div>
-        <div class="btn-group">
-            <button class="btn btn-cancel" onclick="window.closeModal('modalJajanSetup')">Batal</button>
-            <button class="btn btn-submit" onclick="window.setupUangJajan()">Mulai</button>
-        </div>
-    </div>
-</div>
-
-<div class="modal-overlay" id="modalNotifJajan">
-    <div class="modal">
-        <div class="modal-header">Klaim Uang Jajan 🎉</div>
-        <p style="font-size: 14px; text-align: center; margin-bottom: 15px;" id="textNotifJajan">Anda memiliki uang jajan terkumpul sebesar <strong id="amountNotifJajan"></strong>.</p>
-        <div class="btn-group">
-            <button class="btn btn-cancel" style="background: var(--danger); color: white;" onclick="window.ajukanKlaimJajan('terima')">Minta Terima Langsung</button>
-            <button class="btn btn-submit" style="background: var(--success);" onclick="window.ajukanKlaimJajan('simpan')">Minta Simpan ke Saldo</button>
-        </div>
-    </div>
-</div>
-
-<div class="modal-overlay" id="modalDetailPekerja">
-    <div class="modal" style="max-width: 450px;">
-        <div class="modal-header" id="detailNamaPekerja">Detail Akun Pekerja</div>
-        <div class="form-group">
-            <label>Saldo Utama (Bisa Diedit Langsung)</label>
-            <input type="number" id="detailSaldoInput">
-        </div>
-        <button class="sm-btn approve" style="width:100%; padding:10px; margin-bottom:15px;" onclick="window.adminUpdateSaldoLangsung()">💾 Simpan Perubahan Saldo</button>
-        
-        <h4 style="font-size:14px; margin-bottom:5px; color:var(--text-light)">Riwayat Transaksi Pekerja:</h4>
-        <div class="list-wrapper" id="detailHistoryList" style="max-height: 200px; overflow-y: auto;"></div>
-        
-        <div class="btn-group">
-            <button class="btn btn-cancel" onclick="window.closeModal('modalDetailPekerja')">Tutup</button>
-        </div>
-    </div>
-</div>
-
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getDatabase, ref, onValue, set, push, remove, get } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
-    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-
-    // =======================================================================
-    // SILAHKAN GANTI DENGAN FIREBASE CONFIG MILIK ANDA DI SINI
-    // =======================================================================
-    const firebaseConfig = {
-        apiKey: "AIzaSyDJySDZ6MaBnCPPVzAEyTUVbYvjByHyC5c",
+        // ==========================================
+        // GANTI DENGAN KONFIGURASI FIREBASE ANDA !!
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyDJySDZ6MaBnCPPVzAEyTUVbYvjByHyC5c",
   authDomain: "mabirh-6d5f7.firebaseapp.com",
   databaseURL: "https://mabirh-6d5f7-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "mabirh-6d5f7",
@@ -298,478 +103,156 @@
   messagingSenderId: "249970668573",
   appId: "1:249970668573:web:f225cf7b4c1e730ab442f4",
   measurementId: "G-MGR43Z7SY4"
-    };
-    // =======================================================================
+        };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const auth = getAuth(app);
+        // Inisialisasi Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
 
-    const HARGA = { terpal: 2000, packing: 25, jajanPerHari: 5000 };
-    let currentUser = null;
-    let currentUserRole = 'pekerja';
-    let myData = { saldoUtama: 0, jajanStartDate: null, jajanLastClaimDate: null, history: [] };
-    let selectedWorkerUidGlobal = null; // Menyimpan ID pekerja saat admin melihat detail
+        // DOM Elements
+        const pageLogin = document.getElementById('page-login');
+        const statusLoading = document.getElementById('status-loading');
+        const panelPekerja = document.getElementById('panel-pekerja');
+        const panelAdmin = document.getElementById('panel-admin');
+        const userInfo = document.getElementById('user-info');
+        const userEmail = document.getElementById('user-email');
+        const userBadge = document.getElementById('user-badge');
+        const pekerjaSaldo = document.getElementById('pekerja-saldo');
+        const adminTableBody = document.getElementById('admin-table-body');
 
-    // --- PEMERIKSA AUTH & DISTRIBUSI PANEL ROLE ---
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            currentUser = user;
-            document.getElementById('userEmailDisplay').innerText = user.email;
-            
-            // 1. Cek atau Daftarkan Role di /users/{uid}
-            const roleRef = ref(db, 'users/' + user.uid);
-            onValue(roleRef, (snapshot) => {
-                let roleData = snapshot.val();
-                if (!roleData) {
-                    // Jika user baru, otomatis jadikan pekerja
-                    roleData = { email: user.email, role: 'pekerja' };
-                    set(roleRef, roleData);
-                }
-                
-                currentUserRole = roleData.role;
-                document.getElementById('roleBadge').innerText = roleData.role.toUpperCase();
-                document.getElementById('roleBadge').style.background = roleData.role === 'admin' ? '#e74c3c' : '#2ecc71';
+        // EVENT LISTENER BUTTONS
+        document.getElementById('btn-login').addEventListener('click', () => {
+            signInWithPopup(auth, provider).catch(err => alert("Gagal Login: " + err.message));
+        });
 
-                document.getElementById('loginSection').style.display = 'none';
-                document.getElementById('appSection').style.display = 'block';
-
-                if (roleData.role === 'admin') {
-                    initAdminPanel();
-                } else {
-                    initPekerjaPanel();
-                }
+        document.getElementById('btn-logout').addEventListener('click', () => {
+            signOut(auth).then(() => {
+                window.location.reload(); // Refresh halaman setelah logout agar state bersih
             });
-        } else {
-            // Logout state
-            document.getElementById('loginSection').style.display = 'block';
-            document.getElementById('appSection').style.display = 'none';
-            currentUser = null;
-        }
-    });
+        });
 
-    // --- INITIALIZE PANEL PEKERJA ---
-    function initPekerjaPanel() {
-        document.getElementById('adminPanel').style.display = 'none';
-        document.getElementById('adminBalanceView').style.display = 'none';
-        document.getElementById('pekerjaPanel').style.display = 'block';
-        document.getElementById('pekerjaBalanceView').style.display = 'block';
+        // MONITOR STATUS LOGIN USER (ON AUTH STATE CHANGED)
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // Tampilkan info email di header
+                pageLogin.classList.add('hidden');
+                statusLoading.classList.remove('hidden');
+                userInfo.classList.remove('hidden');
+                userEmail.textContent = user.email;
 
-        // Listen Saldo dan Riwayat Sendiri
-        const myDataRef = ref(db, 'catatanPekerja/' + currentUser.uid);
-        onValue(myDataRef, (snapshot) => {
-            const val = snapshot.val();
-            if (val) {
-                myData = val;
-                if(!myData.history) myData.history = [];
+                try {
+                    // Ambil dokumen user berdasarkan UID dari collection 'users'
+                    const docRef = doc(db, "users", user.uid);
+                    const docSnap = await getDoc(docRef);
+
+                    if (docSnap.exists()) {
+                        const userData = docSnap.data();
+                        const role = userData.role ? userData.role.toLowerCase() : 'pekerja';
+                        const saldo = userData.saldo_utama || 0;
+
+                        statusLoading.classList.add('hidden');
+
+                        if (role === 'admin') {
+                            // JIKA USER ADALAH ADMIN
+                            userBadge.textContent = "ADMIN";
+                            userBadge.className = "px-2 py-1 text-xs font-bold rounded bg-red-600 text-white";
+                            panelAdmin.classList.remove('hidden');
+                            loadAdminData(); // Muat data semua pekerja untuk panel admin
+                        } else {
+                            // JIKA USER ADALAH PEKERJA
+                            userBadge.textContent = "PEKERJA";
+                            userBadge.className = "px-2 py-1 text-xs font-bold rounded bg-blue-600 text-white";
+                            panelPekerja.classList.remove('hidden');
+                            pekerjaSaldo.textContent = Number(saldo).toLocaleString('id-ID');
+                        }
+                    } else {
+                        // Jika UID belum ada di Firestore database
+                        statusLoading.classList.add('hidden');
+                        alert("UID Akun Anda belum terdaftar di Firestore. Silakan hubungi Admin atau buat dokumen sesuai UID Anda di Firestore.");
+                        signOut(auth);
+                    }
+                } catch (error) {
+                    console.error("Error mengambil data Firestore:", error);
+                    statusLoading.classList.add('hidden');
+                    alert("Gagal memuat data role database.");
+                }
             } else {
-                myData = { saldoUtama: 0, jajanStartDate: null, jajanLastClaimDate: null, history: [] };
+                // Jika tidak ada user login (Kondisi Awal / Logout)
+                pageLogin.classList.remove('hidden');
+                statusLoading.classList.add('hidden');
+                panelPekerja.classList.add('hidden');
+                panelAdmin.classList.add('hidden');
+                userInfo.classList.add('hidden');
             }
-            document.getElementById('saldoDisplay').innerText = formatRp(myData.saldoUtama);
-            updatePekerjaUI();
-            checkNotifUangJajanAkhirBulan();
         });
 
-        // Listen Permintaan Aktif Sendiri
-        onValue(ref(db, 'requests'), (snapshot) => {
-            const reqs = snapshot.val();
-            const container = document.getElementById('pekerjaRequestList');
-            container.innerHTML = '';
-            let count = 0;
+        // FUNGSI KHUSUS ADMIN: MEMBACA SEMUA USER DI DOKUMEN 'USERS'
+        async function loadAdminData() {
+            adminTableBody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">Memuat data user...</td></tr>`;
+            try {
+                const querySnapshot = await getDocs(collection(db, "users"));
+                adminTableBody.innerHTML = ""; // Bersihkan loading
 
-            if (reqs) {
-                Object.keys(reqs).forEach(key => {
-                    const r = reqs[key];
-                    if (r.workerUid === currentUser.uid) {
-                        count++;
-                        let badgeClass = r.status === 'pending' ? 'badge-pending' : (r.status === 'approved' ? 'badge-approved' : 'badge-rejected');
-                        container.innerHTML += `
-                            <div class="item-row">
-                                <div class="item-info">
-                                    <h4>${r.title}</h4>
-                                    <p>${r.date} | ${r.desc}</p>
-                                </div>
-                                <div class="item-status">
-                                    <span class="status-badge ${badgeClass}">${r.status.toUpperCase()}</span>
-                                    <div style="font-size:12px; margin-top:4px;">${formatRp(r.amount)}</div>
-                                </div>
-                            </div>
-                        `;
-                    }
+                querySnapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    const id = docSnap.id;
+                    const role = data.role || 'pekerja';
+                    const saldo = data.saldo_utama || 0;
+
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-gray-50";
+                    tr.innerHTML = `
+                        <td class="px-4 py-3 font-mono text-xs text-gray-700">${id}</td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-0.5 rounded text-xs font-semibold ${role === 'admin' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}">
+                                ${role}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 font-semibold text-gray-800">Rp ${Number(saldo).toLocaleString('id-ID')}</td>
+                        <td class="px-4 py-3">
+                            ${role !== 'admin' ? `
+                                <button onclick="tambahSaldo('${id}', ${saldo})" class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs px-2 py-1 rounded transition shadow-sm">
+                                    + Tambah Saldo
+                                </button>
+                            ` : `<span class="text-xs text-gray-400">-</span>`}
+                        </td>
+                    `;
+                    adminTableBody.appendChild(tr);
                 });
+            } catch (err) {
+                console.error("Gagal memuat daftar user untuk admin:", err);
+                adminTableBody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-red-500">Gagal mengambil data dari database.</td></tr>`;
             }
-            if(count === 0) container.innerHTML = '<div class="item-row"><p style="color:#aaa;">Tidak ada pengajuan aktif</p></div>';
-        });
-    }
-
-    function updatePekerjaUI() {
-        const historyContainer = document.getElementById('historyList');
-        historyContainer.innerHTML = '';
-        if (myData.history.length === 0) {
-            historyContainer.innerHTML = '<div class="item-row"><p>Belum ada transaksi</p></div>';
-        } else {
-            [...myData.history].reverse().forEach(item => {
-                let sign = item.type === 'in' ? '+' : '-';
-                let colorClass = item.type === 'in' ? 'plus' : 'minus';
-                historyContainer.innerHTML += `
-                    <div class="item-row">
-                        <div class="item-info">
-                            <h4>${item.title}</h4>
-                            <p>${item.date} | ${item.desc}</p>
-                        </div>
-                        <div class="history-amount ${colorClass}" style="font-weight:bold;">${sign} ${formatRp(item.amount)}</div>
-                    </div>
-                `;
-            });
         }
 
-        if (myData.jajanStartDate) {
-            document.getElementById('btnSetupJajan').style.display = 'none';
-            document.getElementById('jajanInfoContainer').style.display = 'block';
-            hitungUangJajanBerjalan();
-        } else {
-            document.getElementById('btnSetupJajan').style.display = 'flex';
-            document.getElementById('jajanInfoContainer').style.display = 'none';
-        }
-    }
+        // FUNGSI ADMIN UNTUK UPDATE SALDO PEKERJA DI FIREBASE
+        window.tambahSaldo = async function(uid, saldoSekarang) {
+            const jumlahInput = prompt("Masukkan jumlah saldo tambahan untuk user ini:", "10000");
+            if (jumlahInput === null || jumlahInput.trim() === "") return;
 
-    // --- INITIALIZE PANEL ADMIN ---
-    function initAdminPanel() {
-        document.getElementById('pekerjaPanel').style.display = 'none';
-        document.getElementById('pekerjaBalanceView').style.display = 'none';
-        document.getElementById('adminPanel').style.display = 'block';
-        document.getElementById('adminBalanceView').style.display = 'block';
-        document.getElementById('syncStatus').innerText = 'Admin Server ✔️';
-
-        // 1. Listen Semua Permintaan Pending di Aplikasi
-        onValue(ref(db, 'requests'), (snapshot) => {
-            const data = snapshot.val();
-            const container = document.getElementById('adminApprovalList');
-            container.innerHTML = '';
-            let pendingCount = 0;
-
-            if (data) {
-                Object.keys(data).forEach(key => {
-                    const r = data[key];
-                    if (r.status === 'pending') {
-                        pendingCount++;
-                        container.innerHTML += `
-                            <div class="item-row" style="flex-direction: column; align-items: flex-start; gap: 8px;">
-                                <div style="display:flex; justify-content:space-between; width:100%;">
-                                    <div class="item-info">
-                                        <h4 style="color:var(--primary)">${r.workerName.toUpperCase()} &bull; ${r.title}</h4>
-                                        <p>${r.date} | ${r.desc}</p>
-                                    </div>
-                                    <div style="font-weight:bold; color:var(--text);">${formatRp(r.amount)}</div>
-                                </div>
-                                <div class="action-container">
-                                    <button class="sm-btn approve" onclick="window.adminProcessRequest('${key}', 'approve')">✔ Setujui</button>
-                                    <button class="sm-btn reject" onclick="window.adminProcessRequest('${key}', 'reject')">❌ Tolak</button>
-                                </div>
-                            </div>
-                        `;
-                    }
-                });
-            }
-            if(pendingCount === 0) container.innerHTML = '<div class="item-row"><p style="color:var(--success);">Bersih! Tidak ada permintaan tertunda.</p></div>';
-        });
-
-        // 2. Listen Semua Daftar Pekerja Terdaftar
-        onValue(ref(db, 'users'), (snapshot) => {
-            const users = snapshot.val();
-            const container = document.getElementById('adminWorkersList');
-            container.innerHTML = '';
-
-            if (users) {
-                Object.keys(users).forEach(uid => {
-                    if (users[uid].role === 'pekerja') {
-                        // Ambil sisa saldo pekerja dari node catatanPekerja
-                        get(ref(db, `catatanPekerja/${uid}/saldoUtama`)).then((saldoSnap) => {
-                            const saldo = saldoSnap.val() || 0;
-                            const name = users[uid].email.split('@')[0];
-                            
-                            // Cek apakah item HTML pekerja tersebut sudah ada untuk menghindari tumpang tindih render async
-                            const existingRow = document.getElementById(`worker-row-${uid}`);
-                            const rowHtml = `
-                                <div class="item-row" id="worker-row-${uid}">
-                                    <div class="item-info">
-                                        <h4 style="text-transform: capitalize;">${name}</h4>
-                                        <p>${users[uid].email}</p>
-                                        <p style="font-weight:bold; color:var(--success); margin-top:3px;">Saldo: ${formatRp(saldo)}</p>
-                                    </div>
-                                    <button class="sm-btn view" onclick="window.adminViewWorkerDetail('${uid}', '${name}')">Kelola Akun</button>
-                                </div>
-                            `;
-                            if (existingRow) {
-                                existingRow.outerHTML = rowHtml;
-                            } else {
-                                container.innerHTML += rowHtml;
-                            }
-                        });
-                    }
-                });
-            }
-        });
-    }
-
-    // --- PROSES PERSETUJUAN ADMIN (Mekanisme Inti) ---
-    window.adminProcessRequest = function(reqId, action) {
-        const reqRef = ref(db, 'requests/' + reqId);
-        
-        get(reqRef).then((snapshot) => {
-            const reqData = snapshot.val();
-            if (!reqData) return;
-
-            if (action === 'reject') {
-                // Jika Ditolak, hapus dari antrean pengajuan atau update status ke 'rejected'
-                remove(reqRef);
-                alert("Permintaan berhasil ditolak.");
+            const tambahan = parseFloat(jumlahInput);
+            if (isNaN(tambahan) || tambahan <= 0) {
+                alert("Masukkan nominal angka valid yang lebih besar dari 0!");
                 return;
             }
 
-            // Jika Disetujui (APPROVE)
-            const workerUid = reqData.workerUid;
-            const workerDataRef = ref(db, 'catatanPekerja/' + workerUid);
-
-            get(workerDataRef).then((wSnapshot) => {
-                let wData = wSnapshot.val() || { saldoUtama: 0, jajanStartDate: null, jajanLastClaimDate: null, history: [] };
-                if(!wData.history) wData.history = [];
-
-                // Eksekusi kalkulasi berdasarkan tipe permohonan
-                if (reqData.type === 'kerja' || reqData.type === 'jajan_simpan') {
-                    wData.saldoUtama += reqData.amount;
-                    wData.history.push({
-                        type: 'in',
-                        title: reqData.title + ' (Disetujui Admin)',
-                        desc: reqData.desc,
-                        amount: reqData.amount,
-                        date: reqData.date
-                    });
-                } else if (reqData.type === 'tarik' || reqData.type === 'jajan_terima') {
-                    wData.saldoUtama -= reqData.amount;
-                    wData.history.push({
-                        type: 'out',
-                        title: reqData.title + ' (Disetujui Admin)',
-                        desc: reqData.desc,
-                        amount: reqData.amount,
-                        date: reqData.date
-                    });
-                }
-
-                // Update tanggal claim uang jajan jika tipenya uang jajan
-                if (reqData.jajanNewClaimDate) {
-                    let nextStart = new Date(reqData.jajanNewClaimDate);
-                    nextStart.setDate(nextStart.getDate() + 1);
-                    wData.jajanLastClaimDate = nextStart.toISOString().split('T')[0];
-                }
-
-                // Simpan perubahan ke data pekerja & hapus tiket antrean request
-                set(workerDataRef, wData).then(() => {
-                    remove(reqRef);
-                    alert(`Permintaan ${reqData.workerName} berhasil disetujui! Saldo diperbarui.`);
+            try {
+                const docRef = doc(db, "users", uid);
+                const saldoBaru = saldoSekarang + tambahan;
+                
+                // Update langsung ke field saldo_utama di Firestore
+                await updateDoc(docRef, {
+                    saldo_utama: saldoBaru
                 });
-            });
-        });
-    }
 
-    // --- FITUR AKSES PENUH ADMIN ---
-    window.adminViewWorkerDetail = function(uid, name) {
-        selectedWorkerUidGlobal = uid;
-        document.getElementById('detailNamaPekerja').innerText = "Kelola Akun: " + name.toUpperCase();
-        
-        get(ref(db, 'catatanPekerja/' + uid)).then((snapshot) => {
-            const data = snapshot.val() || { saldoUtama: 0, history: [] };
-            document.getElementById('detailSaldoInput').value = data.saldoUtama;
-            
-            const listHistory = document.getElementById('detailHistoryList');
-            listHistory.innerHTML = '';
-            
-            if(data.history && data.history.length > 0) {
-                [...data.history].reverse().forEach(h => {
-                    listHistory.innerHTML += `
-                        <div style="font-size:12px; padding:6px; border-bottom:1px solid #f0f0f0; display:flex; justify-content:space-between;">
-                            <span>${h.date} - ${h.title}</span>
-                            <span style="font-weight:bold;">${formatRp(h.amount)}</span>
-                        </div>
-                    `;
-                });
-            } else {
-                listHistory.innerHTML = '<p style="padding:10px; font-size:12px; color:#aaa;">Belum ada riwayat</p>';
+                alert("Saldo berhasil diperbarui!");
+                loadAdminData(); // Refresh isi tabel admin
+            } catch (error) {
+                alert("Gagal memperbarui saldo: " + error.message);
             }
-
-            window.openModal('modalDetailPekerja');
-        });
-    }
-
-    window.adminUpdateSaldoLangsung = function() {
-        if(!selectedWorkerUidGlobal) return;
-        const saldoBaru = parseInt(document.getElementById('detailSaldoInput').value) || 0;
-        
-        set(ref(db, `catatanPekerja/${selectedWorkerUidGlobal}/saldoUtama`), saldoBaru).then(() => {
-            alert("Saldo berhasil diubah secara manual oleh Admin!");
-            window.closeModal('modalDetailPekerja');
-        });
-    }
-
-
-    // --- WORKER: SUBMIT AJUAN KE ANTRIAN (REQUESTS) ---
-    window.submitPekerjaanRequest = function() {
-        const terpal = parseInt(document.getElementById('inputTerpal').value) || 0;
-        const packing = parseInt(document.getElementById('inputPacking').value) || 0;
-        const rawDate = document.getElementById('inputTglKerja').value;
-        
-        if (terpal === 0 && packing === 0) return alert("Isi minimal salah satu pekerjaan!");
-
-        const totalPendapatan = (terpal * HARGA.terpal) + (packing * HARGA.packing);
-        const tglFormat = formatDate(parseHTMLDate(rawDate));
-
-        const reqListRef = ref(db, 'requests');
-        const newReqRef = push(reqListRef);
-        
-        set(newReqRef, {
-            workerUid: currentUser.uid,
-            workerName: currentUser.email.split('@')[0],
-            type: 'kerja',
-            title: 'Pekerjaan Terpal/Packing',
-            desc: `${terpal} Terpal, ${packing} Packing`,
-            amount: totalPendapatan,
-            date: tglFormat,
-            status: 'pending'
-        }).then(() => {
-            window.closeModal('modalPekerjaan');
-            alert("Pengajuan berhasil dikirim! Menunggu persetujuan Admin.");
-        });
-    }
-
-    window.submitPenarikanRequest = function() {
-        const amount = parseInt(document.getElementById('inputTarikAmount').value) || 0;
-        const rawDate = document.getElementById('inputTglTarik').value;
-
-        if (amount <= 0) return alert("Masukkan jumlah penarikan yang valid!");
-        if (amount > myData.saldoUtama) return alert("Saldo Anda tidak mencukupi!");
-
-        const tglFormat = formatDate(parseHTMLDate(rawDate));
-
-        const reqListRef = ref(db, 'requests');
-        const newReqRef = push(reqListRef);
-        
-        set(newReqRef, {
-            workerUid: currentUser.uid,
-            workerName: currentUser.email.split('@')[0],
-            type: 'tarik',
-            title: 'Penarikan Saldo',
-            desc: 'Pengajuan tarik dana manual',
-            amount: amount,
-            date: tglFormat,
-            status: 'pending'
-        }).then(() => {
-            window.closeModal('modalPenarikan');
-            alert("Permohonan tarik dana terkirim! Menunggu persetujuan Admin.");
-        });
-    }
-
-    let jajanPendingData = null;
-    window.ajukanKlaimJajan = function(action) {
-        if (!jajanPendingData) return;
-        
-        const tglFormat = formatDate(new Date(jajanPendingData.newClaimDate));
-        const newReqRef = push(ref(db, 'requests'));
-
-        set(newReqRef, {
-            workerUid: currentUser.uid,
-            workerName: currentUser.email.split('@')[0],
-            type: action === 'simpan' ? 'jajan_simpan' : 'jajan_terima',
-            title: action === 'simpan' ? 'Klaim Uang Jajan (Simpan)' : 'Klaim Uang Jajan (Terima)',
-            desc: `Uang Jajan Bulan ${jajanPendingData.monthName}`,
-            amount: jajanPendingData.amount,
-            date: tglFormat,
-            jajanNewClaimDate: jajanPendingData.newClaimDate,
-            status: 'pending'
-        }).then(() => {
-            jajanPendingData = null;
-            window.closeModal('modalNotifJajan');
-            alert("Permohonan Klaim Uang Jajan telah diajukan ke Admin!");
-        });
-    }
-
-    window.setupUangJajan = function() {
-        const rawDate = document.getElementById('inputTglJajan').value;
-        if (!rawDate) return alert("Harap isi tanggal pertama penerimaan!");
-        
-        const userRef = ref(db, 'catatanPekerja/' + currentUser.uid);
-        myData.jajanStartDate = rawDate;
-        myData.jajanLastClaimDate = rawDate;
-        
-        set(userRef, myData).then(() => {
-            window.closeModal('modalJajanSetup');
-            alert("Uang jajan berhasil diaktifkan!");
-        });
-    }
-
-    // --- UTILITY LOGIC (UANG JAJAN & FORMATS) ---
-    function hitungUangJajanBerjalan() {
-        if (!myData.jajanLastClaimDate) return;
-        const lastClaim = new Date(myData.jajanLastClaimDate);
-        const today = new Date();
-        lastClaim.setHours(0,0,0,0); today.setHours(0,0,0,0);
-
-        let diffDays = Math.floor((today - lastClaim) / (1000 * 60 * 60 * 24));
-        if (diffDays < 0) diffDays = 0;
-        document.getElementById('jajanTerkumpulText').innerText = `Estimasi berjalan bulan ini: ${formatRp(diffDays * HARGA.jajanPerHari)} (${diffDays} Hari)`;
-    }
-
-    function checkNotifUangJajanAkhirBulan() {
-        if (!myData.jajanLastClaimDate) return;
-        const lastClaim = new Date(myData.jajanLastClaimDate);
-        const today = new Date();
-        
-        const isNextMonth = (today.getFullYear() > lastClaim.getFullYear()) || (today.getFullYear() === lastClaim.getFullYear() && today.getMonth() > lastClaim.getMonth());
-
-        if (isNextMonth) {
-            const endOfLastClaimMonth = new Date(lastClaim.getFullYear(), lastClaim.getMonth() + 1, 0);
-            lastClaim.setHours(0,0,0,0); endOfLastClaimMonth.setHours(0,0,0,0);
-            
-            const diffDays = Math.floor((endOfLastClaimMonth - lastClaim) / (1000 * 60 * 60 * 24)) + 1;
-            jajanPendingData = {
-                amount: diffDays * HARGA.jajanPerHari,
-                newClaimDate: endOfLastClaimMonth.toISOString().split('T')[0],
-                monthName: endOfLastClaimMonth.toLocaleString('id-ID', { month: 'long' })
-            };
-            document.getElementById('amountNotifJajan').innerText = formatRp(jajanPendingData.amount);
-            window.openModal('modalNotifJajan');
         }
-    }
-
-    // --- FORM & LOGIN HANDLER ---
-    window.submitLogin = function() {
-        const email = document.getElementById('loginEmail').value.trim();
-        const sandi = document.getElementById('loginPassword').value;
-        if (!email || !sandi) return alert("Isi email dan sandi!");
-
-        signInWithEmailAndPassword(auth, email, sandi).catch((err) => {
-            alert("Gagal masuk: " + err.message);
-        });
-    }
-
-    window.submitLogout = function() {
-        if (confirm("Keluar dari aplikasi?")) signOut(auth);
-    }
-
-    window.openModal = function(id) {
-        const modal = document.getElementById(id);
-        modal.style.display = 'flex';
-        setTimeout(() => modal.querySelector('.modal').classList.add('active'), 10);
-    }
-
-    window.closeModal = function(id) {
-        const modal = document.getElementById(id);
-        modal.querySelector('.modal').classList.remove('active');
-        setTimeout(() => { modal.style.display = 'none'; modal.querySelectorAll('input').forEach(i => i.value = ''); }, 300);
-    }
-
-    function formatRp(a) { return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(a); }
-    function formatDate(d) { return `${d.getDate().toString().padStart(2, '0')}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getFullYear()}`; }
-    function parseHTMLDate(s) { return s ? new Date(s) : new Date(); }
-</script>
+    </script>
 </body>
 </html>
