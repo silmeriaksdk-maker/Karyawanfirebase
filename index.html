@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catatan Pendapatan Pekerja (Firebase Auth + Realtime)</title>
+    <title>Sistem Manajemen Pekerja (Admin & Pekerja)</title>
     <style>
         :root {
             --primary: #4361ee;
             --success: #2ecc71;
             --danger: #e74c3c;
+            --warning: #f1c40f;
             --bg: #f8f9fa;
             --card: #ffffff;
             --text: #2b2d42;
@@ -30,11 +31,11 @@
         }
 
         .container {
-            max-width: 480px;
+            max-width: 500px;
             margin: 0 auto;
         }
 
-        /* --- TAMPILAN HALAMAN LOGIN --- */
+        /* --- LOGIN PAGE --- */
         .login-container {
             max-width: 400px;
             margin: 60px auto;
@@ -44,19 +45,10 @@
             box-shadow: 0 10px 25px rgba(0,0,0,0.05);
             text-align: center;
         }
+        .login-container h2 { margin-bottom: 8px; font-size: 22px; }
+        .login-container p { color: var(--text-light); font-size: 14px; margin-bottom: 25px; }
 
-        .login-container h2 {
-            margin-bottom: 8px;
-            font-size: 22px;
-        }
-
-        .login-container p {
-            color: var(--text-light);
-            font-size: 14px;
-            margin-bottom: 25px;
-        }
-
-        /* Card Saldo */
+        /* --- DASHBOARD COMPONENTS --- */
         .balance-card {
             background: linear-gradient(135deg, var(--primary), #3a0ca3);
             color: white;
@@ -67,7 +59,6 @@
             text-align: center;
             position: relative;
         }
-
         .sync-status {
             position: absolute;
             top: 15px;
@@ -77,266 +68,174 @@
             padding: 3px 8px;
             border-radius: 10px;
         }
-
-        .user-email-info {
+        .role-badge {
+            display: inline-block;
+            background: orange;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 20px;
             font-size: 11px;
-            opacity: 0.8;
-            margin-top: -3px;
-            margin-bottom: 10px;
-            word-break: break-all;
-        }
-
-        .balance-card h2 {
-            font-size: 14px;
-            font-weight: 500;
-            opacity: 0.9;
+            font-weight: bold;
             margin-bottom: 5px;
         }
-
-        .balance-card .amount {
-            font-size: 32px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-
+        .user-email-info { font-size: 12px; opacity: 0.8; margin-bottom: 10px; }
+        .balance-card h2 { font-size: 14px; font-weight: 500; opacity: 0.9; margin-bottom: 5px; }
+        .balance-card .amount { font-size: 32px; font-weight: bold; margin-bottom: 12px; }
         .btn-logout {
-            background: rgba(255, 255, 255, 0.2);
-            border: none;
-            color: white;
-            padding: 5px 12px;
-            border-radius: 6px;
-            font-size: 12px;
-            cursor: pointer;
-            font-weight: 600;
+            background: rgba(255, 255, 255, 0.2); border: none; color: white;
+            padding: 5px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600;
         }
-        .btn-logout:hover { background: rgba(255, 255, 255, 0.3); }
 
         /* Menu Grid */
-        .menu-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
+        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
         .menu-btn {
-            background: var(--card);
-            border: none;
-            border-radius: 12px;
-            padding: 15px;
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
+            background: var(--card); border: none; border-radius: 12px; padding: 15px;
+            font-size: 14px; font-weight: 600; color: var(--text); box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer;
         }
-
         .menu-btn:active { transform: scale(0.98); }
         .menu-btn.primary { color: var(--primary); }
         .menu-btn.danger { color: var(--danger); }
         .menu-btn.success { color: var(--success); }
 
-        /* History List */
-        .section-title {
-            font-size: 16px;
-            margin-bottom: 10px;
-            color: var(--text-light);
-        }
-
-        .history-list {
-            background: var(--card);
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            overflow: hidden;
-        }
-
-        .history-item {
-            padding: 12px 15px;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .history-item:last-child { border-bottom: none; }
+        /* Lists & Cards General */
+        .section-title { font-size: 16px; margin: 15px 0 10px 0; color: var(--text-light); display: flex; justify-content: space-between; align-items: center; }
+        .list-wrapper { background: var(--card); border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); overflow: hidden; margin-bottom: 20px; }
         
-        .history-info h4 { font-size: 14px; margin-bottom: 3px; }
-        .history-info p { font-size: 12px; color: var(--text-light); }
-        .history-amount { font-weight: bold; font-size: 14px; }
-        .history-amount.plus { color: var(--success); }
-        .history-amount.minus { color: var(--danger); }
+        /* Request & History Items */
+        .item-row { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .item-row:last-child { border-bottom: none; }
+        .item-info h4 { font-size: 14px; margin-bottom: 3px; }
+        .item-info p { font-size: 12px; color: var(--text-light); }
+        .item-status { font-weight: bold; font-size: 14px; text-align: right; }
+        .status-badge { font-size: 11px; padding: 2px 6px; border-radius: 4px; color: white; font-weight: bold; }
+        .badge-pending { background: var(--warning); color: #7f8c8d; }
+        .badge-approved { background: var(--success); }
+        .badge-rejected { background: var(--danger); }
+
+        /* Action Buttons Inside Rows */
+        .action-container { display: flex; gap: 5px; margin-top: 8px; }
+        .sm-btn { padding: 6px 12px; border: none; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; color: white; }
+        .sm-btn.approve { background: var(--success); }
+        .sm-btn.reject { background: var(--danger); }
+        .sm-btn.view { background: var(--primary); }
+
+        /* Form Controls */
+        .form-group { margin-bottom: 15px; text-align: left; }
+        .form-group label { display: block; font-size: 13px; color: var(--text-light); margin-bottom: 5px; }
+        .form-group input { width: 100%; padding: 11px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
 
         /* Modal / Pop-up */
         .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.5);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            padding: 20px;
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5);
+            display: none; justify-content: center; align-items: center; z-index: 1000; padding: 20px;
         }
-
-        .modal {
-            background: var(--card);
-            width: 100%;
-            max-width: 400px;
-            border-radius: 16px;
-            padding: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            transform: translateY(20px);
-            opacity: 0;
-            transition: all 0.3s ease;
-        }
-
-        .modal.active {
-            transform: translateY(0);
-            opacity: 1;
-        }
-
-        .modal-header {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-
-        .form-group { margin-bottom: 15px; }
-        .form-group label {
-            display: block;
-            font-size: 13px;
-            color: var(--text-light);
-            margin-bottom: 5px;
-            text-align: left;
-        }
-        .form-group input {
-            width: 100%;
-            padding: 11px 12px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 14px;
-        }
-
-        .btn-group {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-        .btn {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 14px;
-            cursor: pointer;
-        }
+        .modal { background: var(--card); width: 100%; max-width: 400px; border-radius: 16px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); transform: translateY(20px); opacity: 0; transition: all 0.3s ease; }
+        .modal.active { transform: translateY(0); opacity: 1; }
+        .modal-header { font-size: 18px; font-weight: bold; margin-bottom: 15px; text-align: center; }
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        .btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; }
         .btn-cancel { background: #eee; color: var(--text); }
         .btn-submit { background: var(--primary); color: white; }
-        .btn-success { background: var(--success); color: white; }
 
-        /* Uang Jajan Info */
-        .jajan-info {
-            background: #e0f7fa;
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 20px;
-            font-size: 14px;
-        }
+        .jajan-info { background: #e0f7fa; border-radius: 12px; padding: 15px; margin-bottom: 20px; font-size: 14px; }
     </style>
 </head>
 <body>
 
-<div id="loginSection" class="login-container">
-    <h2>Selamat Datang</h2>
-    <p>Silahkan masuk menggunakan akun Anda</p>
-    
-    <div class="form-group">
-        <label>Email (Gmail)</label>
-        <input type="email" id="loginEmail" placeholder="contoh@gmail.com">
-    </div>
-    <div class="form-group">
-        <label>Kata Sandi</label>
-        <input type="password" id="loginPassword" placeholder="Masukkan sandi">
-    </div>
-    
-    <button class="btn btn-submit" style="width: 100%; margin-top: 10px;" onclick="window.submitLogin()">
-        Masuk Aplikasi
-    </button>
-</div>
-
-<div id="appSection" class="container" style="display: none;">
-    <div class="balance-card">
-        <div class="sync-status" id="syncStatus">Memuat...</div>
-        <div class="user-email-info" id="userEmailDisplay">-</div>
-        <h2>Saldo Utama</h2>
-        <div class="amount" id="saldoDisplay">Rp 0</div>
-        <button class="btn-logout" onclick="window.submitLogout()">👋 Keluar Akun</button>
+<div class="container">
+    <div id="loginSection" class="login-container">
+        <h2>Sistem Keuangan</h2>
+        <p>Silahkan masuk menggunakan akun Anda</p>
+        <div class="form-group">
+            <label>Email (Gmail)</label>
+            <input type="email" id="loginEmail" placeholder="contoh@gmail.com">
+        </div>
+        <div class="form-group">
+            <label>Kata Sandi</label>
+            <input type="password" id="loginPassword" placeholder="Masukkan sandi">
+        </div>
+        <button class="btn btn-submit" style="width: 100%;" onclick="window.submitLogin()">Masuk</button>
     </div>
 
-    <div id="jajanInfoContainer" class="jajan-info" style="display: none;">
-        <strong>Status Uang Jajan:</strong> Aktif<br>
-        <span style="font-size: 12px; color: #006064;" id="jajanTerkumpulText"></span>
-    </div>
+    <div id="appSection" style="display: none;">
+        
+        <div class="balance-card">
+            <div class="sync-status" id="syncStatus">Memuat...</div>
+            <div class="role-badge" id="roleBadge">Pekerja</div>
+            <div class="user-email-info" id="userEmailDisplay">-</div>
+            
+            <div id="pekerjaBalanceView">
+                <h2>Saldo Anda</h2>
+                <div class="amount" id="saldoDisplay">Rp 0</div>
+            </div>
+            <div id="adminBalanceView" style="display: none;">
+                <h2>Panel Kontrol Utama</h2>
+                <div class="amount" style="font-size: 22px; margin: 10px 0;">Mode Admin Aktif</div>
+            </div>
+            
+            <button class="btn-logout" onclick="window.submitLogout()">👋 Keluar Akun</button>
+        </div>
 
-    <div class="menu-grid">
-        <button class="menu-btn primary" onclick="window.openModal('modalPekerjaan')">
-            📝 Input Pekerjaan
-        </button>
-        <button class="menu-btn danger" onclick="window.openModal('modalPenarikan')">
-            💸 Tarik Saldo
-        </button>
-        <button class="menu-btn success" style="grid-column: span 2;" onclick="window.openModal('modalJajanSetup')" id="btnSetupJajan">
-            ⚙️ Atur Mulai Uang Jajan
-        </button>
-    </div>
+        <div id="pekerjaPanel" style="display: none;">
+            <div id="jajanInfoContainer" class="jajan-info" style="display: none;">
+                <strong>Status Uang Jajan:</strong> Aktif<br>
+                <span style="font-size: 12px; color: #006064;" id="jajanTerkumpulText"></span>
+            </div>
 
-    <h3 class="section-title">Riwayat Transaksi</h3>
-    <div class="history-list" id="historyList">
-        <div class="history-item"><p>Memuat data dari server...</p></div>
+            <div class="menu-grid">
+                <button class="menu-btn primary" onclick="window.openModal('modalPekerjaan')">📝 Ajukan Kerja</button>
+                <button class="menu-btn danger" onclick="window.openModal('modalPenarikan')">💸 Ajukan Tarik Saldo</button>
+                <button class="menu-btn success" style="grid-column: span 2;" onclick="window.openModal('modalJajanSetup')" id="btnSetupJajan">⚙️ Atur Mulai Uang Jajan</button>
+            </div>
+
+            <h3 class="section-title">Status Permintaan Anda</h3>
+            <div class="list-wrapper" id="pekerjaRequestList">
+                <div class="item-row"><p>Tidak ada pengajuan aktif</p></div>
+            </div>
+
+            <h3 class="section-title">Riwayat Saldo Disetujui</h3>
+            <div class="list-wrapper" id="historyList">
+                <div class="item-row"><p>Belum ada transaksi</p></div>
+            </div>
+        </div>
+
+        <div id="adminPanel" style="display: none;">
+            <h3 class="section-title">🚨 Butuh Persetujuan Anda</h3>
+            <div class="list-wrapper" id="adminApprovalList">
+                <div class="item-row"><p>Bersih! Tidak ada permintaan tertunda.</p></div>
+            </div>
+
+            <h3 class="section-title">👥 Daftar Semua Pekerja</h3>
+            <div class="list-wrapper" id="adminWorkersList">
+                <div class="item-row"><p>Memuat daftar pekerja...</p></div>
+            </div>
+        </div>
+
     </div>
 </div>
 
 <div class="modal-overlay" id="modalPekerjaan">
     <div class="modal">
-        <div class="modal-header">Input Pekerjaan</div>
-        <div class="form-group">
-            <label>Jumlah Terpal (Rp 2.000/pcs)</label>
-            <input type="number" id="inputTerpal" placeholder="0">
-        </div>
-        <div class="form-group">
-            <label>Jumlah Packing (Rp 25/pcs)</label>
-            <input type="number" id="inputPacking" placeholder="0">
-        </div>
-        <div class="form-group">
-            <label>Tanggal (Kosongkan untuk hari ini)</label>
-            <input type="date" id="inputTglKerja">
-        </div>
+        <div class="modal-header">Ajukan Hasil Pekerjaan</div>
+        <div class="form-group"><label>Jumlah Terpal (Rp 2.000/pcs)</label><input type="number" id="inputTerpal" placeholder="0"></div>
+        <div class="form-group"><label>Jumlah Packing (Rp 25/pcs)</label><input type="number" id="inputPacking" placeholder="0"></div>
+        <div class="form-group"><label>Tanggal Kerja</label><input type="date" id="inputTglKerja"></div>
         <div class="btn-group">
             <button class="btn btn-cancel" onclick="window.closeModal('modalPekerjaan')">Batal</button>
-            <button class="btn btn-submit" onclick="window.submitPekerjaan()">Simpan</button>
+            <button class="btn btn-submit" onclick="window.submitPekerjaanRequest()">Kirim Pengajuan</button>
         </div>
     </div>
 </div>
 
 <div class="modal-overlay" id="modalPenarikan">
     <div class="modal">
-        <div class="modal-header">Tarik Saldo</div>
-        <div class="form-group">
-            <label>Jumlah Penarikan (Rp)</label>
-            <input type="number" id="inputTarikAmount" placeholder="Contoh: 50000">
-        </div>
-        <div class="form-group">
-            <label>Tanggal Penarikan (Kosongkan untuk hari ini)</label>
-            <input type="date" id="inputTglTarik">
-        </div>
+        <div class="modal-header">Ajukan Penarikan Saldo</div>
+        <div class="form-group"><label>Jumlah Penarikan (Rp)</label><input type="number" id="inputTarikAmount" placeholder="Contoh: 50000"></div>
+        <div class="form-group"><label>Tanggal Penarikan</label><input type="date" id="inputTglTarik"></div>
         <div class="btn-group">
             <button class="btn btn-cancel" onclick="window.closeModal('modalPenarikan')">Batal</button>
-            <button class="btn btn-submit" onclick="window.submitPenarikan()">Tarik</button>
+            <button class="btn btn-submit" onclick="window.submitPenarikanRequest()">Kirim Pengajuan</button>
         </div>
     </div>
 </div>
@@ -344,13 +243,8 @@
 <div class="modal-overlay" id="modalJajanSetup">
     <div class="modal">
         <div class="modal-header">Pengaturan Uang Jajan</div>
-        <p style="font-size: 13px; color: #666; margin-bottom: 15px; text-align: center;">
-            Uang jajan Rp 5.000/hari akan terhitung otomatis sejak tanggal yang Anda tentukan.
-        </p>
-        <div class="form-group">
-            <label>Tanggal Pertama Penerimaan</label>
-            <input type="date" id="inputTglJajan">
-        </div>
+        <p style="font-size: 13px; color: #666; margin-bottom: 15px; text-align: center;">Uang jajan Rp 5.000/hari akan dihitung otomatis.</p>
+        <div class="form-group"><label>Tanggal Pertama Penerimaan</label><input type="date" id="inputTglJajan"></div>
         <div class="btn-group">
             <button class="btn btn-cancel" onclick="window.closeModal('modalJajanSetup')">Batal</button>
             <button class="btn btn-submit" onclick="window.setupUangJajan()">Mulai</button>
@@ -360,31 +254,43 @@
 
 <div class="modal-overlay" id="modalNotifJajan">
     <div class="modal">
-        <div class="modal-header">Uang Jajan Terkumpul! 🎉</div>
-        <p style="font-size: 14px; text-align: center; margin-bottom: 15px;" id="textNotifJajan">
-            Bulan telah berganti. Anda memiliki uang jajan sebesar <strong id="amountNotifJajan"></strong>.
-        </p>
-        <p style="font-size: 12px; color: #666; text-align: center; margin-bottom: 20px;">
-            Pilih "Simpan" untuk memasukkan ke Saldo Utama, atau "Terima" untuk mengambilnya langsung.
-        </p>
+        <div class="modal-header">Klaim Uang Jajan 🎉</div>
+        <p style="font-size: 14px; text-align: center; margin-bottom: 15px;" id="textNotifJajan">Anda memiliki uang jajan terkumpul sebesar <strong id="amountNotifJajan"></strong>.</p>
         <div class="btn-group">
-            <button class="btn btn-cancel" style="background: var(--danger); color: white;" onclick="window.prosesJajan('terima')">Terima (Tarik)</button>
-            <button class="btn btn-success" onclick="window.prosesJajan('simpan')">Simpan (Ke Saldo)</button>
+            <button class="btn btn-cancel" style="background: var(--danger); color: white;" onclick="window.ajukanKlaimJajan('terima')">Minta Terima Langsung</button>
+            <button class="btn btn-submit" style="background: var(--success);" onclick="window.ajukanKlaimJajan('simpan')">Minta Simpan ke Saldo</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="modalDetailPekerja">
+    <div class="modal" style="max-width: 450px;">
+        <div class="modal-header" id="detailNamaPekerja">Detail Akun Pekerja</div>
+        <div class="form-group">
+            <label>Saldo Utama (Bisa Diedit Langsung)</label>
+            <input type="number" id="detailSaldoInput">
+        </div>
+        <button class="sm-btn approve" style="width:100%; padding:10px; margin-bottom:15px;" onclick="window.adminUpdateSaldoLangsung()">💾 Simpan Perubahan Saldo</button>
+        
+        <h4 style="font-size:14px; margin-bottom:5px; color:var(--text-light)">Riwayat Transaksi Pekerja:</h4>
+        <div class="list-wrapper" id="detailHistoryList" style="max-height: 200px; overflow-y: auto;"></div>
+        
+        <div class="btn-group">
+            <button class="btn btn-cancel" onclick="window.closeModal('modalDetailPekerja')">Tutup</button>
         </div>
     </div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
-    // Menambahkan modul Firebase Auth
+    import { getDatabase, ref, onValue, set, push, remove, get } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
     import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
     // =======================================================================
-    // SILAHKAN GANTI DENGAN FIREBASE CONFIG MILIK ANDA DI SINI (SAMA SEPERTI APP 1)
+    // SILAHKAN GANTI DENGAN FIREBASE CONFIG MILIK ANDA DI SINI
     // =======================================================================
     const firebaseConfig = {
-            apiKey: "AIzaSyDJySDZ6MaBnCPPVzAEyTUVbYvjByHyC5c",
+        apiKey: "AIzaSyDJySDZ6MaBnCPPVzAEyTUVbYvjByHyC5c",
   authDomain: "mabirh-6d5f7.firebaseapp.com",
   databaseURL: "https://mabirh-6d5f7-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "mabirh-6d5f7",
@@ -395,146 +301,129 @@
     };
     // =======================================================================
 
-    // Inisialisasi Firebase
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    const auth = getAuth(app); // Inisialisasi Auth
+    const auth = getAuth(app);
 
-    // Variabel Data & Konfigurasi
     const HARGA = { terpal: 2000, packing: 25, jajanPerHari: 5000 };
-    let appData = { saldoUtama: 0, jajanStartDate: null, jajanLastClaimDate: null, history: [] };
-    let jajanPendingData = null;
-    let dbRef = null; // Akan diset dinamis setelah login
+    let currentUser = null;
+    let currentUserRole = 'pekerja';
+    let myData = { saldoUtama: 0, jajanStartDate: null, jajanLastClaimDate: null, history: [] };
+    let selectedWorkerUidGlobal = null; // Menyimpan ID pekerja saat admin melihat detail
 
-    // --- PEMERIKSA STATUS LOGIN (AUTH LISTENER) ---
+    // --- PEMERIKSA AUTH & DISTRIBUSI PANEL ROLE ---
     onAuthStateChanged(auth, (user) => {
-        const loginSection = document.getElementById('loginSection');
-        const appSection = document.getElementById('appSection');
-
         if (user) {
-            // JIKA USER BERHASIL LOGIN
-            loginSection.style.display = 'none';
-            appSection.style.display = 'block';
-            document.getElementById('userEmailDisplay').innerText = `Logged in: ${user.email}`;
-
-            // Arahkan database secara dinamis berdasarkan UID User yang login
-            dbRef = ref(db, 'catatanPekerja/' + user.uid);
-
-            // Pasang Listener Real-time Database khusus UID ini
-            onValue(dbRef, (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    appData = data;
-                    if (!appData.history) appData.history = [];
-                } else {
-                    // Reset data jika user baru/belum punya records data sama sekali
-                    appData = { saldoUtama: 0, jajanStartDate: null, jajanLastClaimDate: null, history: [] };
+            currentUser = user;
+            document.getElementById('userEmailDisplay').innerText = user.email;
+            
+            // 1. Cek atau Daftarkan Role di /users/{uid}
+            const roleRef = ref(db, 'users/' + user.uid);
+            onValue(roleRef, (snapshot) => {
+                let roleData = snapshot.val();
+                if (!roleData) {
+                    // Jika user baru, otomatis jadikan pekerja
+                    roleData = { email: user.email, role: 'pekerja' };
+                    set(roleRef, roleData);
                 }
                 
-                document.getElementById('syncStatus').innerText = 'Sinkron ✔️';
-                updateUI();
-                checkNotifUangJajanAkhirBulan();
-            }, (error) => {
-                document.getElementById('syncStatus').innerText = 'Error ❌';
-                console.error("Firebase database error: ", error);
-            });
+                currentUserRole = roleData.role;
+                document.getElementById('roleBadge').innerText = roleData.role.toUpperCase();
+                document.getElementById('roleBadge').style.background = roleData.role === 'admin' ? '#e74c3c' : '#2ecc71';
 
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('appSection').style.display = 'block';
+
+                if (roleData.role === 'admin') {
+                    initAdminPanel();
+                } else {
+                    initPekerjaPanel();
+                }
+            });
         } else {
-            // JIKA USER BELUM LOGIN / LOGOUT
-            loginSection.style.display = 'block';
-            appSection.style.display = 'none';
-            dbRef = null;
+            // Logout state
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('appSection').style.display = 'none';
+            currentUser = null;
         }
     });
 
-    // --- FUNGSI PROSES AUTH (LOGIN & LOGOUT) ---
-    window.submitLogin = function() {
-        const email = document.getElementById('loginEmail').value.trim();
-        const sandi = document.getElementById('loginPassword').value;
+    // --- INITIALIZE PANEL PEKERJA ---
+    function initPekerjaPanel() {
+        document.getElementById('adminPanel').style.display = 'none';
+        document.getElementById('adminBalanceView').style.display = 'none';
+        document.getElementById('pekerjaPanel').style.display = 'block';
+        document.getElementById('pekerjaBalanceView').style.display = 'block';
 
-        if (!email || !sandi) return alert("Harap isi email dan sandi Anda!");
+        // Listen Saldo dan Riwayat Sendiri
+        const myDataRef = ref(db, 'catatanPekerja/' + currentUser.uid);
+        onValue(myDataRef, (snapshot) => {
+            const val = snapshot.val();
+            if (val) {
+                myData = val;
+                if(!myData.history) myData.history = [];
+            } else {
+                myData = { saldoUtama: 0, jajanStartDate: null, jajanLastClaimDate: null, history: [] };
+            }
+            document.getElementById('saldoDisplay').innerText = formatRp(myData.saldoUtama);
+            updatePekerjaUI();
+            checkNotifUangJajanAkhirBulan();
+        });
 
-        document.getElementById('syncStatus').innerText = 'Memverifikasi...';
-        
-        signInWithEmailAndPassword(auth, email, sandi)
-            .then((userCredential) => {
-                // Clear input form setelah sukses
-                document.getElementById('loginEmail').value = '';
-                document.getElementById('loginPassword').value = '';
-            })
-            .catch((error) => {
-                let pesanError = "Gagal masuk. Periksa kembali email & sandi Anda.";
-                if (error.code === 'auth/user-not-found') pesanError = "Akun tidak terdaftar!";
-                if (error.code === 'auth/wrong-password') pesanError = "Sandi yang Anda masukkan salah!";
-                alert(pesanError);
-            });
-    }
+        // Listen Permintaan Aktif Sendiri
+        onValue(ref(db, 'requests'), (snapshot) => {
+            const reqs = snapshot.val();
+            const container = document.getElementById('pekerjaRequestList');
+            container.innerHTML = '';
+            let count = 0;
 
-    window.submitLogout = function() {
-        if (confirm("Apakah Anda yakin ingin keluar dari akun?")) {
-            signOut(auth).then(() => {
-                alert("Berhasil keluar akun!");
-            }).catch((error) => {
-                alert("Gagal Keluar: " + error.message);
-            });
-        }
-    }
-
-    // Fungsi simpan data ke Firebase
-    function saveToFirebase() {
-        if (!dbRef) return;
-        document.getElementById('syncStatus').innerText = 'Menyimpan...';
-        set(dbRef, appData).catch((error) => {
-            alert("Gagal menyimpan ke server: " + error.message);
+            if (reqs) {
+                Object.keys(reqs).forEach(key => {
+                    const r = reqs[key];
+                    if (r.workerUid === currentUser.uid) {
+                        count++;
+                        let badgeClass = r.status === 'pending' ? 'badge-pending' : (r.status === 'approved' ? 'badge-approved' : 'badge-rejected');
+                        container.innerHTML += `
+                            <div class="item-row">
+                                <div class="item-info">
+                                    <h4>${r.title}</h4>
+                                    <p>${r.date} | ${r.desc}</p>
+                                </div>
+                                <div class="item-status">
+                                    <span class="status-badge ${badgeClass}">${r.status.toUpperCase()}</span>
+                                    <div style="font-size:12px; margin-top:4px;">${formatRp(r.amount)}</div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+            }
+            if(count === 0) container.innerHTML = '<div class="item-row"><p style="color:#aaa;">Tidak ada pengajuan aktif</p></div>';
         });
     }
 
-    // --- FUNGSI FORMAT & UTILITY ---
-    function formatRp(angka) {
-        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
-    }
-
-    function formatDate(dateObj) {
-        let d = dateObj.getDate().toString().padStart(2, '0');
-        let m = (dateObj.getMonth() + 1).toString().padStart(2, '0');
-        let y = dateObj.getFullYear();
-        return `${d}-${m}-${y}`;
-    }
-
-    function parseHTMLDate(dateString) {
-        if (!dateString) return new Date();
-        return new Date(dateString);
-    }
-
-    // --- UPDATE UI TERPUSAT ---
-    function updateUI() {
-        // Update Tampilan Saldo Utama
-        document.getElementById('saldoDisplay').innerText = formatRp(appData.saldoUtama);
-        
-        // Update Tampilan Riwayat Transaksi
+    function updatePekerjaUI() {
         const historyContainer = document.getElementById('historyList');
         historyContainer.innerHTML = '';
-        if (appData.history.length === 0) {
-            historyContainer.innerHTML = '<div class="history-item"><p>Belum ada transaksi</p></div>';
+        if (myData.history.length === 0) {
+            historyContainer.innerHTML = '<div class="item-row"><p>Belum ada transaksi</p></div>';
         } else {
-            const sortedHistory = [...appData.history].reverse();
-            sortedHistory.forEach(item => {
+            [...myData.history].reverse().forEach(item => {
                 let sign = item.type === 'in' ? '+' : '-';
                 let colorClass = item.type === 'in' ? 'plus' : 'minus';
                 historyContainer.innerHTML += `
-                    <div class="history-item">
-                        <div class="history-info">
+                    <div class="item-row">
+                        <div class="item-info">
                             <h4>${item.title}</h4>
                             <p>${item.date} | ${item.desc}</p>
                         </div>
-                        <div class="history-amount ${colorClass}">${sign} ${formatRp(item.amount)}</div>
+                        <div class="history-amount ${colorClass}" style="font-weight:bold;">${sign} ${formatRp(item.amount)}</div>
                     </div>
                 `;
             });
         }
 
-        // Update Navigasi UI Fitur Uang Jajan
-        if (appData.jajanStartDate) {
+        if (myData.jajanStartDate) {
             document.getElementById('btnSetupJajan').style.display = 'none';
             document.getElementById('jajanInfoContainer').style.display = 'block';
             hitungUangJajanBerjalan();
@@ -544,7 +433,328 @@
         }
     }
 
-    // --- BINDING FUNGSI KE OBJECT WINDOW MENGGUNAKAN GLOBAL AKSES ---
+    // --- INITIALIZE PANEL ADMIN ---
+    function initAdminPanel() {
+        document.getElementById('pekerjaPanel').style.display = 'none';
+        document.getElementById('pekerjaBalanceView').style.display = 'none';
+        document.getElementById('adminPanel').style.display = 'block';
+        document.getElementById('adminBalanceView').style.display = 'block';
+        document.getElementById('syncStatus').innerText = 'Admin Server ✔️';
+
+        // 1. Listen Semua Permintaan Pending di Aplikasi
+        onValue(ref(db, 'requests'), (snapshot) => {
+            const data = snapshot.val();
+            const container = document.getElementById('adminApprovalList');
+            container.innerHTML = '';
+            let pendingCount = 0;
+
+            if (data) {
+                Object.keys(data).forEach(key => {
+                    const r = data[key];
+                    if (r.status === 'pending') {
+                        pendingCount++;
+                        container.innerHTML += `
+                            <div class="item-row" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+                                <div style="display:flex; justify-content:space-between; width:100%;">
+                                    <div class="item-info">
+                                        <h4 style="color:var(--primary)">${r.workerName.toUpperCase()} &bull; ${r.title}</h4>
+                                        <p>${r.date} | ${r.desc}</p>
+                                    </div>
+                                    <div style="font-weight:bold; color:var(--text);">${formatRp(r.amount)}</div>
+                                </div>
+                                <div class="action-container">
+                                    <button class="sm-btn approve" onclick="window.adminProcessRequest('${key}', 'approve')">✔ Setujui</button>
+                                    <button class="sm-btn reject" onclick="window.adminProcessRequest('${key}', 'reject')">❌ Tolak</button>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+            }
+            if(pendingCount === 0) container.innerHTML = '<div class="item-row"><p style="color:var(--success);">Bersih! Tidak ada permintaan tertunda.</p></div>';
+        });
+
+        // 2. Listen Semua Daftar Pekerja Terdaftar
+        onValue(ref(db, 'users'), (snapshot) => {
+            const users = snapshot.val();
+            const container = document.getElementById('adminWorkersList');
+            container.innerHTML = '';
+
+            if (users) {
+                Object.keys(users).forEach(uid => {
+                    if (users[uid].role === 'pekerja') {
+                        // Ambil sisa saldo pekerja dari node catatanPekerja
+                        get(ref(db, `catatanPekerja/${uid}/saldoUtama`)).then((saldoSnap) => {
+                            const saldo = saldoSnap.val() || 0;
+                            const name = users[uid].email.split('@')[0];
+                            
+                            // Cek apakah item HTML pekerja tersebut sudah ada untuk menghindari tumpang tindih render async
+                            const existingRow = document.getElementById(`worker-row-${uid}`);
+                            const rowHtml = `
+                                <div class="item-row" id="worker-row-${uid}">
+                                    <div class="item-info">
+                                        <h4 style="text-transform: capitalize;">${name}</h4>
+                                        <p>${users[uid].email}</p>
+                                        <p style="font-weight:bold; color:var(--success); margin-top:3px;">Saldo: ${formatRp(saldo)}</p>
+                                    </div>
+                                    <button class="sm-btn view" onclick="window.adminViewWorkerDetail('${uid}', '${name}')">Kelola Akun</button>
+                                </div>
+                            `;
+                            if (existingRow) {
+                                existingRow.outerHTML = rowHtml;
+                            } else {
+                                container.innerHTML += rowHtml;
+                            }
+                        });
+                    }
+                });
+            }
+        });
+    }
+
+    // --- PROSES PERSETUJUAN ADMIN (Mekanisme Inti) ---
+    window.adminProcessRequest = function(reqId, action) {
+        const reqRef = ref(db, 'requests/' + reqId);
+        
+        get(reqRef).then((snapshot) => {
+            const reqData = snapshot.val();
+            if (!reqData) return;
+
+            if (action === 'reject') {
+                // Jika Ditolak, hapus dari antrean pengajuan atau update status ke 'rejected'
+                remove(reqRef);
+                alert("Permintaan berhasil ditolak.");
+                return;
+            }
+
+            // Jika Disetujui (APPROVE)
+            const workerUid = reqData.workerUid;
+            const workerDataRef = ref(db, 'catatanPekerja/' + workerUid);
+
+            get(workerDataRef).then((wSnapshot) => {
+                let wData = wSnapshot.val() || { saldoUtama: 0, jajanStartDate: null, jajanLastClaimDate: null, history: [] };
+                if(!wData.history) wData.history = [];
+
+                // Eksekusi kalkulasi berdasarkan tipe permohonan
+                if (reqData.type === 'kerja' || reqData.type === 'jajan_simpan') {
+                    wData.saldoUtama += reqData.amount;
+                    wData.history.push({
+                        type: 'in',
+                        title: reqData.title + ' (Disetujui Admin)',
+                        desc: reqData.desc,
+                        amount: reqData.amount,
+                        date: reqData.date
+                    });
+                } else if (reqData.type === 'tarik' || reqData.type === 'jajan_terima') {
+                    wData.saldoUtama -= reqData.amount;
+                    wData.history.push({
+                        type: 'out',
+                        title: reqData.title + ' (Disetujui Admin)',
+                        desc: reqData.desc,
+                        amount: reqData.amount,
+                        date: reqData.date
+                    });
+                }
+
+                // Update tanggal claim uang jajan jika tipenya uang jajan
+                if (reqData.jajanNewClaimDate) {
+                    let nextStart = new Date(reqData.jajanNewClaimDate);
+                    nextStart.setDate(nextStart.getDate() + 1);
+                    wData.jajanLastClaimDate = nextStart.toISOString().split('T')[0];
+                }
+
+                // Simpan perubahan ke data pekerja & hapus tiket antrean request
+                set(workerDataRef, wData).then(() => {
+                    remove(reqRef);
+                    alert(`Permintaan ${reqData.workerName} berhasil disetujui! Saldo diperbarui.`);
+                });
+            });
+        });
+    }
+
+    // --- FITUR AKSES PENUH ADMIN ---
+    window.adminViewWorkerDetail = function(uid, name) {
+        selectedWorkerUidGlobal = uid;
+        document.getElementById('detailNamaPekerja').innerText = "Kelola Akun: " + name.toUpperCase();
+        
+        get(ref(db, 'catatanPekerja/' + uid)).then((snapshot) => {
+            const data = snapshot.val() || { saldoUtama: 0, history: [] };
+            document.getElementById('detailSaldoInput').value = data.saldoUtama;
+            
+            const listHistory = document.getElementById('detailHistoryList');
+            listHistory.innerHTML = '';
+            
+            if(data.history && data.history.length > 0) {
+                [...data.history].reverse().forEach(h => {
+                    listHistory.innerHTML += `
+                        <div style="font-size:12px; padding:6px; border-bottom:1px solid #f0f0f0; display:flex; justify-content:space-between;">
+                            <span>${h.date} - ${h.title}</span>
+                            <span style="font-weight:bold;">${formatRp(h.amount)}</span>
+                        </div>
+                    `;
+                });
+            } else {
+                listHistory.innerHTML = '<p style="padding:10px; font-size:12px; color:#aaa;">Belum ada riwayat</p>';
+            }
+
+            window.openModal('modalDetailPekerja');
+        });
+    }
+
+    window.adminUpdateSaldoLangsung = function() {
+        if(!selectedWorkerUidGlobal) return;
+        const saldoBaru = parseInt(document.getElementById('detailSaldoInput').value) || 0;
+        
+        set(ref(db, `catatanPekerja/${selectedWorkerUidGlobal}/saldoUtama`), saldoBaru).then(() => {
+            alert("Saldo berhasil diubah secara manual oleh Admin!");
+            window.closeModal('modalDetailPekerja');
+        });
+    }
+
+
+    // --- WORKER: SUBMIT AJUAN KE ANTRIAN (REQUESTS) ---
+    window.submitPekerjaanRequest = function() {
+        const terpal = parseInt(document.getElementById('inputTerpal').value) || 0;
+        const packing = parseInt(document.getElementById('inputPacking').value) || 0;
+        const rawDate = document.getElementById('inputTglKerja').value;
+        
+        if (terpal === 0 && packing === 0) return alert("Isi minimal salah satu pekerjaan!");
+
+        const totalPendapatan = (terpal * HARGA.terpal) + (packing * HARGA.packing);
+        const tglFormat = formatDate(parseHTMLDate(rawDate));
+
+        const reqListRef = ref(db, 'requests');
+        const newReqRef = push(reqListRef);
+        
+        set(newReqRef, {
+            workerUid: currentUser.uid,
+            workerName: currentUser.email.split('@')[0],
+            type: 'kerja',
+            title: 'Pekerjaan Terpal/Packing',
+            desc: `${terpal} Terpal, ${packing} Packing`,
+            amount: totalPendapatan,
+            date: tglFormat,
+            status: 'pending'
+        }).then(() => {
+            window.closeModal('modalPekerjaan');
+            alert("Pengajuan berhasil dikirim! Menunggu persetujuan Admin.");
+        });
+    }
+
+    window.submitPenarikanRequest = function() {
+        const amount = parseInt(document.getElementById('inputTarikAmount').value) || 0;
+        const rawDate = document.getElementById('inputTglTarik').value;
+
+        if (amount <= 0) return alert("Masukkan jumlah penarikan yang valid!");
+        if (amount > myData.saldoUtama) return alert("Saldo Anda tidak mencukupi!");
+
+        const tglFormat = formatDate(parseHTMLDate(rawDate));
+
+        const reqListRef = ref(db, 'requests');
+        const newReqRef = push(reqListRef);
+        
+        set(newReqRef, {
+            workerUid: currentUser.uid,
+            workerName: currentUser.email.split('@')[0],
+            type: 'tarik',
+            title: 'Penarikan Saldo',
+            desc: 'Pengajuan tarik dana manual',
+            amount: amount,
+            date: tglFormat,
+            status: 'pending'
+        }).then(() => {
+            window.closeModal('modalPenarikan');
+            alert("Permohonan tarik dana terkirim! Menunggu persetujuan Admin.");
+        });
+    }
+
+    let jajanPendingData = null;
+    window.ajukanKlaimJajan = function(action) {
+        if (!jajanPendingData) return;
+        
+        const tglFormat = formatDate(new Date(jajanPendingData.newClaimDate));
+        const newReqRef = push(ref(db, 'requests'));
+
+        set(newReqRef, {
+            workerUid: currentUser.uid,
+            workerName: currentUser.email.split('@')[0],
+            type: action === 'simpan' ? 'jajan_simpan' : 'jajan_terima',
+            title: action === 'simpan' ? 'Klaim Uang Jajan (Simpan)' : 'Klaim Uang Jajan (Terima)',
+            desc: `Uang Jajan Bulan ${jajanPendingData.monthName}`,
+            amount: jajanPendingData.amount,
+            date: tglFormat,
+            jajanNewClaimDate: jajanPendingData.newClaimDate,
+            status: 'pending'
+        }).then(() => {
+            jajanPendingData = null;
+            window.closeModal('modalNotifJajan');
+            alert("Permohonan Klaim Uang Jajan telah diajukan ke Admin!");
+        });
+    }
+
+    window.setupUangJajan = function() {
+        const rawDate = document.getElementById('inputTglJajan').value;
+        if (!rawDate) return alert("Harap isi tanggal pertama penerimaan!");
+        
+        const userRef = ref(db, 'catatanPekerja/' + currentUser.uid);
+        myData.jajanStartDate = rawDate;
+        myData.jajanLastClaimDate = rawDate;
+        
+        set(userRef, myData).then(() => {
+            window.closeModal('modalJajanSetup');
+            alert("Uang jajan berhasil diaktifkan!");
+        });
+    }
+
+    // --- UTILITY LOGIC (UANG JAJAN & FORMATS) ---
+    function hitungUangJajanBerjalan() {
+        if (!myData.jajanLastClaimDate) return;
+        const lastClaim = new Date(myData.jajanLastClaimDate);
+        const today = new Date();
+        lastClaim.setHours(0,0,0,0); today.setHours(0,0,0,0);
+
+        let diffDays = Math.floor((today - lastClaim) / (1000 * 60 * 60 * 24));
+        if (diffDays < 0) diffDays = 0;
+        document.getElementById('jajanTerkumpulText').innerText = `Estimasi berjalan bulan ini: ${formatRp(diffDays * HARGA.jajanPerHari)} (${diffDays} Hari)`;
+    }
+
+    function checkNotifUangJajanAkhirBulan() {
+        if (!myData.jajanLastClaimDate) return;
+        const lastClaim = new Date(myData.jajanLastClaimDate);
+        const today = new Date();
+        
+        const isNextMonth = (today.getFullYear() > lastClaim.getFullYear()) || (today.getFullYear() === lastClaim.getFullYear() && today.getMonth() > lastClaim.getMonth());
+
+        if (isNextMonth) {
+            const endOfLastClaimMonth = new Date(lastClaim.getFullYear(), lastClaim.getMonth() + 1, 0);
+            lastClaim.setHours(0,0,0,0); endOfLastClaimMonth.setHours(0,0,0,0);
+            
+            const diffDays = Math.floor((endOfLastClaimMonth - lastClaim) / (1000 * 60 * 60 * 24)) + 1;
+            jajanPendingData = {
+                amount: diffDays * HARGA.jajanPerHari,
+                newClaimDate: endOfLastClaimMonth.toISOString().split('T')[0],
+                monthName: endOfLastClaimMonth.toLocaleString('id-ID', { month: 'long' })
+            };
+            document.getElementById('amountNotifJajan').innerText = formatRp(jajanPendingData.amount);
+            window.openModal('modalNotifJajan');
+        }
+    }
+
+    // --- FORM & LOGIN HANDLER ---
+    window.submitLogin = function() {
+        const email = document.getElementById('loginEmail').value.trim();
+        const sandi = document.getElementById('loginPassword').value;
+        if (!email || !sandi) return alert("Isi email dan sandi!");
+
+        signInWithEmailAndPassword(auth, email, sandi).catch((err) => {
+            alert("Gagal masuk: " + err.message);
+        });
+    }
+
+    window.submitLogout = function() {
+        if (confirm("Keluar dari aplikasi?")) signOut(auth);
+    }
+
     window.openModal = function(id) {
         const modal = document.getElementById(id);
         modal.style.display = 'flex';
@@ -554,153 +764,12 @@
     window.closeModal = function(id) {
         const modal = document.getElementById(id);
         modal.querySelector('.modal').classList.remove('active');
-        setTimeout(() => {
-            modal.style.display = 'none';
-            modal.querySelectorAll('input').forEach(input => input.value = '');
-        }, 300);
+        setTimeout(() => { modal.style.display = 'none'; modal.querySelectorAll('input').forEach(i => i.value = ''); }, 300);
     }
 
-    window.submitPekerjaan = function() {
-        const terpal = parseInt(document.getElementById('inputTerpal').value) || 0;
-        const packing = parseInt(document.getElementById('inputPacking').value) || 0;
-        const rawDate = document.getElementById('inputTglKerja').value;
-        
-        if (terpal === 0 && packing === 0) return alert("Isi minimal salah satu pekerjaan!");
-
-        const dateObj = parseHTMLDate(rawDate);
-        const tglFormat = formatDate(dateObj);
-        const totalPendapatan = (terpal * HARGA.terpal) + (packing * HARGA.packing);
-
-        appData.saldoUtama += totalPendapatan;
-        appData.history.push({
-            type: 'in',
-            title: 'Pekerjaan Selesai',
-            desc: `${terpal} Terpal, ${packing} Packing`,
-            amount: totalPendapatan,
-            date: tglFormat
-        });
-
-        saveToFirebase();
-        window.closeModal('modalPekerjaan');
-        alert(`Berhasil menambah Rp ${totalPendapatan.toLocaleString()} ke saldo!`);
-    }
-
-    window.submitPenarikan = function() {
-        const amount = parseInt(document.getElementById('inputTarikAmount').value) || 0;
-        const rawDate = document.getElementById('inputTglTarik').value;
-
-        if (amount <= 0) return alert("Masukkan jumlah penarikan yang valid!");
-        if (amount > appData.saldoUtama) return alert("Saldo tidak mencukupi!");
-
-        const dateObj = parseHTMLDate(rawDate);
-        const tglFormat = formatDate(dateObj);
-
-        appData.saldoUtama -= amount;
-        appData.history.push({
-            type: 'out',
-            title: 'Penarikan Saldo',
-            desc: 'Tarik manual',
-            amount: amount,
-            date: tglFormat
-        });
-
-        saveToFirebase();
-        window.closeModal('modalPenarikan');
-        alert(`Penarikan sebesar Rp ${amount.toLocaleString()} berhasil!`);
-    }
-
-    window.setupUangJajan = function() {
-        const rawDate = document.getElementById('inputTglJajan').value;
-        if (!rawDate) return alert("Harap isi tanggal pertama penerimaan!");
-
-        appData.jajanStartDate = rawDate;
-        appData.jajanLastClaimDate = rawDate;
-        
-        saveToFirebase();
-        window.closeModal('modalJajanSetup');
-        alert("Uang jajan berhasil diaktifkan!");
-    }
-
-    window.prosesJajan = function(action) {
-        if (!jajanPendingData) return;
-        const tglFormat = formatDate(new Date(jajanPendingData.newClaimDate));
-
-        if (action === 'simpan') {
-            appData.saldoUtama += jajanPendingData.amount;
-            appData.history.push({
-                type: 'in',
-                title: 'Uang Jajan (Simpan)',
-                desc: `Bulan ${jajanPendingData.monthName}`,
-                amount: jajanPendingData.amount,
-                date: tglFormat
-            });
-            alert("Uang jajan berhasil dimasukkan ke Saldo Utama!");
-        } else if (action === 'terima') {
-            appData.history.push({
-                type: 'out',
-                title: 'Uang Jajan (Terima Langsung)',
-                desc: `Ditarik: Bulan ${jajanPendingData.monthName}`,
-                amount: jajanPendingData.amount,
-                date: tglFormat
-            });
-            alert("Uang jajan telah diterima dan dicatat sebagai penarikan!");
-        }
-
-        let nextStart = new Date(jajanPendingData.newClaimDate);
-        nextStart.setDate(nextStart.getDate() + 1);
-        appData.jajanLastClaimDate = nextStart.toISOString().split('T')[0];
-        
-        jajanPendingData = null;
-        window.closeModal('modalNotifJajan');
-        saveToFirebase();
-    }
-
-    // --- LOGIKA HITUNGAN OTOMATIS UANG JAJAN ---
-    function hitungUangJajanBerjalan() {
-        if (!appData.jajanLastClaimDate) return;
-        const lastClaim = new Date(appData.jajanLastClaimDate);
-        const today = new Date();
-        
-        lastClaim.setHours(0,0,0,0);
-        today.setHours(0,0,0,0);
-
-        const diffTime = today - lastClaim;
-        let diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-        if (diffDays < 0) diffDays = 0;
-
-        const terkumpul = diffDays * HARGA.jajanPerHari;
-        document.getElementById('jajanTerkumpulText').innerText = `Estimasi berjalan bulan ini: ${formatRp(terkumpul)} (${diffDays} Hari)`;
-    }
-
-    function checkNotifUangJajanAkhirBulan() {
-        if (!appData.jajanLastClaimDate) return;
-
-        const lastClaim = new Date(appData.jajanLastClaimDate);
-        const today = new Date();
-        
-        const isNextMonth = (today.getFullYear() > lastClaim.getFullYear()) || 
-                            (today.getFullYear() === lastClaim.getFullYear() && today.getMonth() > lastClaim.getMonth());
-
-        if (isNextMonth) {
-            const endOfLastClaimMonth = new Date(lastClaim.getFullYear(), lastClaim.getMonth() + 1, 0);
-            
-            lastClaim.setHours(0,0,0,0);
-            endOfLastClaimMonth.setHours(0,0,0,0);
-            const diffTime = endOfLastClaimMonth - lastClaim;
-            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-
-            const totalJajan = diffDays * HARGA.jajanPerHari;
-            
-            jajanPendingData = {
-                amount: totalJajan,
-                newClaimDate: endOfLastClaimMonth.toISOString().split('T')[0],
-                monthName: endOfLastClaimMonth.toLocaleString('id-ID', { month: 'long' })
-            };
-
-            document.getElementById('amountNotifJajan').innerText = formatRp(totalJajan);
-            window.openModal('modalNotifJajan');
-        }
-    }
+    function formatRp(a) { return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(a); }
+    function formatDate(d) { return `${d.getDate().toString().padStart(2, '0')}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getFullYear()}`; }
+    function parseHTMLDate(s) { return s ? new Date(s) : new Date(); }
 </script>
 </body>
 </html>
