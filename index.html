@@ -66,29 +66,26 @@
     </div>
 
     <script type="module">
-        // 1. IMPORT FIREBASE
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, increment, getDoc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // !!! GANTI DENGAN CONFIG FIREBASE KAMU !!!
         const firebaseConfig = {
-            apiKey: "API_KEY_KAMU",
-            authDomain: "PROYEK_KAMU.firebaseapp.com",
-            projectId: "PROYEK_KAMU",
-            storageBucket: "PROYEK_KAMU.appspot.com",
-            messagingSenderId: "SENDER_ID",
-            appId: "APP_ID"
+            apiKey: "AIzaSyDJySDZ6MaBnCPPVzAEyTUVbYvjByHyC5c",
+            authDomain: "mabirh-6d5f7.firebaseapp.com",
+            projectId: "mabirh-6d5f7",
+            storageBucket: "mabirh-6d5f7.firebasestorage.app",
+            messagingSenderId: "249970668573",
+            appId: "1:249970668573:web:18a2334feb093875b442f4"
         };
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // State Pengguna Saat Ini
         let currentUserData = null;
 
-        // FUNGSI BANTUAN: Format Tanggal dd-mm-yyyy
         function formatTanggal(dateInput) {
             let tgl = dateInput ? new Date(dateInput) : new Date();
             let dd = String(tgl.getDate()).padStart(2, '0');
@@ -97,33 +94,35 @@
             return `${dd}-${mm}-${yyyy}`;
         }
 
-        // 2. LOGIKA LOGIN & PERPINDAHAN HALAMAN
         const loginPage = document.getElementById('login-page');
         const pekerjaPage = document.getElementById('pekerja-page');
         const adminPage = document.getElementById('admin-page');
 
+        // LOGIKA LOGIN DENGAN AUTO-TRIM & NOTIFIKASI ERROR ASLI
         document.getElementById('btn-login').addEventListener('click', async () => {
-            const email = document.getElementById('email').value;
+            // .trim() berfungsi menghapus spasi gaib di awal/akhir teks input HP
+            const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
+
             try {
                 await signInWithEmailAndPassword(auth, email, password);
             } catch (error) {
+                // Memunculkan pop-up kode error spesifik dari server Firebase
+                alert("Firebase Error Code: " + error.code);
+                
                 document.getElementById('login-error').innerText = "Gagal masuk. Cek email/password.";
                 document.getElementById('login-error').classList.remove('hidden');
             }
         });
 
-        // Logout untuk kedua role
         const prosesLogout = () => signOut(auth);
         document.getElementById('btn-logout-pekerja').addEventListener('click', prosesLogout);
         document.getElementById('btn-logout-admin').addEventListener('click', prosesLogout);
 
-        // Memantau Status Login (Realtime)
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 loginPage.classList.add('hidden');
                 
-                // Ambil data role dari Firestore
                 const userDoc = await getDoc(doc(db, "users", user.uid));
                 if (userDoc.exists()) {
                     currentUserData = userDoc.data();
@@ -145,16 +144,13 @@
             }
         });
 
-        // 3. LOGIKA DASHBOARD PEKERJA
         function loadPekerjaDashboard() {
             document.getElementById('nama-pekerja').innerText = currentUserData.nama;
             
-            // Listener Realtime untuk Saldo Pekerja
             onSnapshot(doc(db, "users", currentUserData.uid), (doc) => {
                 document.getElementById('saldo-pekerja').innerText = doc.data().saldo_utama.toLocaleString('id-ID');
             });
 
-            // Tombol Kirim Pekerjaan
             document.getElementById('btn-kirim-kerja').onclick = async () => {
                 const terpal = parseInt(document.getElementById('input-terpal').value) || 0;
                 const packing = parseInt(document.getElementById('input-packing').value) || 0;
@@ -163,7 +159,7 @@
                 if (terpal === 0 && packing === 0) return alert("Masukkan jumlah pekerjaan!");
 
                 const totalUpah = (terpal * 2000) + (packing * 25);
-                const tanggalFinal = formatTanggal(tanggalRaw); // Akan otomatis hari ini jika kosong
+                const tanggalFinal = formatTanggal(tanggalRaw);
 
                 try {
                     await addDoc(collection(db, "pekerjaan"), {
@@ -185,12 +181,10 @@
                 }
             };
 
-            // Tombol Cek Uang Jajan (Simulasi Sederhana Akhir Bulan)
             document.getElementById('btn-cek-jajan').onclick = async () => {
                 let pilihan = confirm("Pilih OK untuk SIMPAN ke Saldo Utama, atau CANCEL untuk TERIMA tunai dari Admin.");
                 let jenisPengajuan = pilihan ? "simpan" : "terima";
                 
-                // Asumsi pengajuan uang jajan 30 hari (Rp 150.000)
                 await addDoc(collection(db, "uang_jajan"), {
                     workerId: currentUserData.uid,
                     namaPekerja: currentUserData.nama,
@@ -203,14 +197,12 @@
             };
         }
 
-        // 4. LOGIKA DASHBOARD ADMIN (REALTIME)
         function loadAdminDashboard() {
             const listPending = document.getElementById('list-pending');
 
-            // Memantau koleksi 'pekerjaan' yang berstatus 'pending'
             const qPekerjaan = query(collection(db, "pekerjaan"), where("status", "==", "pending"));
             onSnapshot(qPekerjaan, (snapshot) => {
-                listPending.innerHTML = ''; // Kosongkan list
+                listPending.innerHTML = '';
                 if (snapshot.empty) {
                     listPending.innerHTML = '<p class="text-sm text-gray-500">Tidak ada data.</p>';
                     return;
@@ -234,17 +226,14 @@
                     listPending.appendChild(div);
                 });
 
-                // Pasang event listener ke semua tombol Setujui
                 document.querySelectorAll('.btn-setujui').forEach(btn => {
                     btn.onclick = async (e) => {
                         const jobId = e.target.getAttribute('data-id');
                         const workerId = e.target.getAttribute('data-worker');
                         const upah = parseInt(e.target.getAttribute('data-upah'));
 
-                        // 1. Ubah status pekerjaan jadi approved
                         await updateDoc(doc(db, "pekerjaan", jobId), { status: "approved" });
                         
-                        // 2. Tambah saldo pekerja menggunakan increment Firestore
                         await updateDoc(doc(db, "users", workerId), {
                             saldo_utama: increment(upah)
                         });
