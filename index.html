@@ -317,7 +317,7 @@
             currentUser = user;
             document.getElementById('userEmailDisplay').innerText = user.email;
             
-            // 1. Cek atau Daftarkan Role di Realtime Database (/users/{uid})
+            // 1. Cek atau Daftarkan Role di /users/{uid}
             const roleRef = ref(db, 'users/' + user.uid);
             onValue(roleRef, (snapshot) => {
                 let roleData = snapshot.val();
@@ -327,13 +327,12 @@
                     set(roleRef, roleData);
                 }
                 
-                // Normalisasi string role menjadi huruf kecil untuk mengantisipasi kesalahan ketik di DB
+                // --- PERBAIKAN UTAMA: Ambil nilai role dan paksa ke huruf kecil semua ---
                 const roleLower = roleData.role ? roleData.role.toLowerCase() : 'pekerja';
                 currentUserRole = roleLower;
-                
-                const roleBadge = document.getElementById('roleBadge');
-                roleBadge.innerText = roleLower.toUpperCase();
-                roleBadge.style.background = roleLower === 'admin' ? '#e74c3c' : '#2ecc71';
+
+                document.getElementById('roleBadge').innerText = roleLower.toUpperCase();
+                document.getElementById('roleBadge').style.background = roleLower === 'admin' ? '#e74c3c' : '#2ecc71';
 
                 document.getElementById('loginSection').style.display = 'none';
                 document.getElementById('appSection').style.display = 'block';
@@ -486,7 +485,7 @@
 
             if (users) {
                 Object.keys(users).forEach(uid => {
-                    // Pastikan pengecekan role aman dari masalah huruf kapital
+                    // --- PERBAIKAN: Menjaga sistem list admin aman dari salah pengetikan huruf kapital ---
                     const uRole = users[uid].role ? users[uid].role.toLowerCase() : 'pekerja';
                     if (uRole === 'pekerja') {
                         // Ambil sisa saldo pekerja dari node catatanPekerja
@@ -527,13 +526,11 @@
             if (!reqData) return;
 
             if (action === 'reject') {
-                // Jika Ditolak, hapus dari antrean pengajuan atau update status ke 'rejected'
                 remove(reqRef);
                 alert("Permintaan berhasil ditolak.");
                 return;
             }
 
-            // Jika Disetujui (APPROVE)
             const workerUid = reqData.workerUid;
             const workerDataRef = ref(db, 'catatanPekerja/' + workerUid);
 
@@ -541,7 +538,6 @@
                 let wData = wSnapshot.val() || { saldoUtama: 0, jajanStartDate: null, jajanLastClaimDate: null, history: [] };
                 if(!wData.history) wData.history = [];
 
-                // Eksekusi kalkulasi berdasarkan tipe permohonan
                 if (reqData.type === 'kerja' || reqData.type === 'jajan_simpan') {
                     wData.saldoUtama += reqData.amount;
                     wData.history.push({
@@ -562,14 +558,12 @@
                     });
                 }
 
-                // Update tanggal claim uang jajan jika tipenya uang jajan
                 if (reqData.jajanNewClaimDate) {
                     let nextStart = new Date(reqData.jajanNewClaimDate);
                     nextStart.setDate(nextStart.getDate() + 1);
                     wData.jajanLastClaimDate = nextStart.toISOString().split('T')[0];
                 }
 
-                // Simpan perubahan ke data pekerja & hapus tiket antrean request
                 set(workerDataRef, wData).then(() => {
                     remove(reqRef);
                     alert(`Permintaan ${reqData.workerName} berhasil disetujui! Saldo diperbarui.`);
