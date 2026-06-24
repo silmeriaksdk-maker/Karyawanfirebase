@@ -1,7 +1,7 @@
 {
-  "name": "Sistem Keuangan Manajemen Pekerja",
-  "short_name": "SisKeu Pekerja",
-  "description": "Sistem Manajemen Keuangan untuk Admin dan Pekerja",
+  "name": "Mabirh Employee v1",
+  "short_name": "Mabirh Emp",
+  "description": "Sistem Manajemen Keuangan Mabirh Employee v1",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#f8f9fa",
