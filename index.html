@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Manajemen Pekerja (Admin & Pekerja)</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4361ee">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="apple-touch-icon" href="icon-192.png">
+
     <style>
         :root {
             --primary: #4361ee;
@@ -886,6 +893,15 @@
     function formatRp(a) { return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(a); }
     function formatDate(d) { return `${d.getDate().toString().padStart(2, '0')}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getFullYear()}`; }
     function parseHTMLDate(s) { return s ? new Date(s) : new Date(); }
+
+    // --- REGISTRASI SERVICE WORKER UNTUK PWA ---
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .then((reg) => console.log('PWA Service Worker terdaftar!', reg.scope))
+                .catch((err) => console.error('Gagal mendaftarkan Service Worker:', err));
+        });
+    }
 </script>
 </body>
 </html>
