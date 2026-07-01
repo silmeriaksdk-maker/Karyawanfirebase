@@ -105,6 +105,11 @@
         .menu-btn.danger { color: var(--danger); }
         .menu-btn.success { color: var(--success); }
 
+        /* Navigation Pages Sub-Header */
+        .page-header-nav { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; margin-top: 5px; }
+        .btn-back { background: #eaeafb; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; color: var(--primary); }
+        .btn-back:active { transform: scale(0.95); }
+
         /* Lists & Cards General */
         .section-title { font-size: 16px; margin: 15px 0 10px 0; color: var(--text-light); display: flex; justify-content: space-between; align-items: center; }
         .list-wrapper { background: var(--card); border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); overflow: hidden; margin-bottom: 20px; }
@@ -195,6 +200,7 @@
             <div class="menu-grid">
                 <button class="menu-btn primary" onclick="window.openModal('modalPekerjaan')">📝 Ajukan Kerja</button>
                 <button class="menu-btn danger" onclick="window.openModal('modalPenarikan')">💸 Ajukan Tarik Saldo</button>
+                <button class="menu-btn primary" style="grid-column: span 2; background: #eaeafb;" onclick="window.switchWorkerPage('riwayatKerja')">📋 Lihat Riwayat Pekerjaan</button>
                 <button class="menu-btn success" style="grid-column: span 2;" onclick="window.openModal('modalJajanSetup')" id="btnSetupJajan">⚙️ Atur Mulai Uang Jajan</button>
             </div>
 
@@ -209,9 +215,20 @@
             </div>
         </div>
 
+        <div id="pekerjaRiwayatKerjaPanel" style="display: none;">
+            <div class="page-header-nav">
+                <button class="btn-back" onclick="window.switchWorkerPage('dashboard')">⬅️ Kembali</button>
+                <h3>Riwayat Hasil Kerja</h3>
+            </div>
+            <div class="list-wrapper" id="pekerjaJobHistoryList">
+                <div class="item-row"><p style="color:#aaa;">Belum ada riwayat pekerjaan disetujui.</p></div>
+            </div>
+        </div>
+
         <div id="adminPanel" style="display: none;">
-            <div style="margin-bottom: 15px;">
+            <div style="margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px;">
                 <button class="btn btn-submit" style="width: 100%;" onclick="window.openModal('modalTambahUser')">➕ Tambah Akun Pengguna Baru</button>
+                <button class="btn" style="width: 100%; background: #3a0ca3; color: white;" onclick="window.switchAdminPage('riwayatPembayaran')">💰 Lihat Riwayat Pembayaran Keluar</button>
             </div>
 
             <h3 class="section-title">🚨 Butuh Persetujuan Anda</h3>
@@ -219,18 +236,23 @@
                 <div class="item-row"><p>Bersih! Tidak ada permintaan tertunda.</p></div>
             </div>
 
-            <h3 class="section-title">💰 Riwayat Persetujuan Pembayaran</h3>
+            <h3 class="section-title">👥 Daftar Semua Pengguna</h3>
+            <div class="list-wrapper" id="adminWorkersList">
+                <div class="item-row"><p>Memuat daftar pekerja...</p></div>
+            </div>
+        </div>
+
+        <div id="adminRiwayatPembayaranPanel" style="display: none;">
+            <div class="page-header-nav">
+                <button class="btn-back" onclick="window.switchAdminPage('dashboard')">⬅️ Kembali</button>
+                <h3>Riwayat Pembayaran Keluar</h3>
+            </div>
             <div class="total-box">
                 <span>Total Dana Keluar:</span>
                 <span id="adminTotalPembayaran" style="color: var(--danger);">Rp 0</span>
             </div>
-            <div class="list-wrapper" id="adminPaymentHistoryList" style="max-height: 250px; overflow-y: auto;">
+            <div class="list-wrapper" id="adminPaymentHistoryList" style="max-height: 450px; overflow-y: auto;">
                 <div class="item-row"><p style="color:#aaa;">Belum ada pembayaran disetujui.</p></div>
-            </div>
-
-            <h3 class="section-title">👥 Daftar Semua Pengguna</h3>
-            <div class="list-wrapper" id="adminWorkersList">
-                <div class="item-row"><p>Memuat daftar pekerja...</p></div>
             </div>
         </div>
 
@@ -360,6 +382,28 @@
     let myData = { saldoUtama: 0, jajanStartDate: null, jajanLastClaimDate: null, history: [] };
     let selectedWorkerUidGlobal = null;
 
+    // --- MANAJEMEN ROUTING / PERPINDAHAN HALAMAN (SPA) ---
+    window.switchWorkerPage = function(page) {
+        if (page === 'dashboard') {
+            document.getElementById('pekerjaPanel').style.display = 'block';
+            document.getElementById('pekerjaRiwayatKerjaPanel').style.display = 'none';
+        } else if (page === 'riwayatKerja') {
+            document.getElementById('pekerjaPanel').style.display = 'none';
+            document.getElementById('pekerjaRiwayatKerjaPanel').style.display = 'block';
+            renderPekerjaJobHistory();
+        }
+    }
+
+    window.switchAdminPage = function(page) {
+        if (page === 'dashboard') {
+            document.getElementById('adminPanel').style.display = 'block';
+            document.getElementById('adminRiwayatPembayaranPanel').style.display = 'none';
+        } else if (page === 'riwayatPembayaran') {
+            document.getElementById('adminPanel').style.display = 'none';
+            document.getElementById('adminRiwayatPembayaranPanel').style.display = 'block';
+        }
+    }
+
     // --- PEMERIKSA AUTH & DISTRIBUSI PANEL ROLE ---
     onAuthStateChanged(auth, (user) => {
         if (user) {
@@ -403,7 +447,9 @@
 
     // --- INITIALIZE PANEL PEKERJA ---
     function initPekerjaPanel() {
+        window.switchWorkerPage('dashboard');
         document.getElementById('adminPanel').style.display = 'none';
+        document.getElementById('adminRiwayatPembayaranPanel').style.display = 'none';
         document.getElementById('adminBalanceView').style.display = 'none';
         document.getElementById('pekerjaPanel').style.display = 'block';
         document.getElementById('pekerjaBalanceView').style.display = 'block';
@@ -482,11 +528,45 @@
             document.getElementById('btnSetupJajan').style.display = 'flex';
             document.getElementById('jajanInfoContainer').style.display = 'none';
         }
+
+        // Jalankan sinkronisasi tampilan riwayat pekerjaan baru jika sedang dibuka
+        renderPekerjaJobHistory();
+    }
+
+    // RENDER DETIL HALAMAN BARU: RIWAYAT PEKERJAAN KHUSUS PEKERJA
+    function renderPekerjaJobHistory() {
+        const container = document.getElementById('pekerjaJobHistoryList');
+        if (!container) return;
+        container.innerHTML = '';
+
+        // Memfilter history yang hanya berasal dari aktivitas pengerjaan 'kerja'
+        const jobEntries = (myData.history || []).filter(item => 
+            item.type === 'in' && item.title.includes('Pekerjaan')
+        );
+
+        if (jobEntries.length === 0) {
+            container.innerHTML = '<div class="item-row"><p style="color:#aaa; text-align:center; width:100%;">Belum ada catatan pengerjaan Terpal / Packing yang disetujui.</p></div>';
+        } else {
+            [...jobEntries].reverse().forEach(item => {
+                container.innerHTML += `
+                    <div class="item-row">
+                        <div class="item-info">
+                            <h4 style="color: var(--primary); font-size:14px;">🛠️ ${item.title}</h4>
+                            <p style="margin: 3px 0 6px 0; color:#555; font-weight:500;">Detail: ${item.desc}</p>
+                            <p style="font-size:11px; color:var(--text-light);">${item.date}</p>
+                        </div>
+                        <div style="font-weight: bold; color: var(--success); font-size: 14px;">+ ${formatRp(item.amount)}</div>
+                    </div>
+                `;
+            });
+        }
     }
 
     // --- INITIALIZE PANEL ADMIN ---
     function initAdminPanel() {
+        window.switchAdminPage('dashboard');
         document.getElementById('pekerjaPanel').style.display = 'none';
+        document.getElementById('pekerjaRiwayatKerjaPanel').style.display = 'none';
         document.getElementById('pekerjaBalanceView').style.display = 'none';
         document.getElementById('adminPanel').style.display = 'block';
         document.getElementById('adminBalanceView').style.display = 'block';
@@ -697,7 +777,7 @@
         });
     }
 
-    // FITUR BARU: Tambah Pengguna Manual
+    // FITUR: Tambah Pengguna Manual
     window.adminTambahUserManual = function() {
         const email = document.getElementById('newUserEmail').value.trim();
         const uid = document.getElementById('newUserUid').value.trim();
@@ -723,7 +803,7 @@
         }).catch(err => alert("Gagal mendaftarkan user: " + err.message));
     }
 
-    // FITUR BARU: Hapus Pengguna Manual
+    // FITUR: Hapus Pengguna Manual
     window.adminHapusUserManual = function(uid, name) {
         if(confirm(`Apakah Anda yakin ingin menghapus seluruh data pengguna "${name.toUpperCase()}" secara permanen dari sistem database?\n(Tindakan ini tidak dapat dibatalkan)`)) {
             remove(ref(db, 'users/' + uid)).then(() => {
