@@ -151,8 +151,16 @@
         .btn-cancel { background: #eee; color: var(--text); }
         .btn-submit { background: var(--primary); color: white; }
 
-        .jajan-info { background: #e0f7fa; border-radius: 12px; padding: 15px; margin-bottom: 20px; font-size: 14px; }
         .total-box { background: #eaeafb; border-radius: 8px; padding: 10px 15px; font-size: 14px; font-weight: bold; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;}
+        
+        /* --- EXCEL STYLE TABLE --- */
+        .excel-table-container { width: 100%; overflow-x: auto; margin-top: 10px; background: white; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+        .excel-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; min-width: 400px; }
+        .excel-table th, .excel-table td { padding: 10px 12px; border: 1px solid #e0e0e0; }
+        .excel-table th { background-color: #f1f3f5; color: var(--text); font-weight: bold; text-align: center; }
+        .excel-table tr:nth-child(even) { background-color: #fafbfc; }
+        .btn-danger-sm { background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; }
+        .btn-danger-sm:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
@@ -192,16 +200,11 @@
         </div>
 
         <div id="pekerjaPanel" style="display: none;">
-            <div id="jajanInfoContainer" class="jajan-info" style="display: none;">
-                <strong>Status Uang Jajan:</strong> Aktif<br>
-                <span style="font-size: 12px; color: #006064;" id="jajanTerkumpulText"></span>
-            </div>
-
             <div class="menu-grid">
                 <button class="menu-btn primary" onclick="window.openModal('modalPekerjaan')">📝 Ajukan Kerja</button>
                 <button class="menu-btn danger" onclick="window.openModal('modalPenarikan')">💸 Ajukan Tarik Saldo</button>
                 <button class="menu-btn primary" style="grid-column: span 2; background: #eaeafb;" onclick="window.switchWorkerPage('riwayatKerja')">📋 Lihat Riwayat Pekerjaan</button>
-                <button class="menu-btn success" style="grid-column: span 2;" onclick="window.openModal('modalJajanSetup')" id="btnSetupJajan">⚙️ Atur Mulai Uang Jajan</button>
+                <button class="menu-btn success" style="grid-column: span 2;" onclick="window.switchWorkerPage('pencatatanTerpal')">📊 Pencatatan Terpal (Excel Style)</button>
             </div>
 
             <h3 class="section-title">Status Permintaan Anda</h3>
@@ -225,10 +228,55 @@
             </div>
         </div>
 
+        <div id="pekerjaPencatatanTerpalPanel" style="display: none;">
+            <div class="page-header-nav">
+                <button class="btn-back" onclick="window.switchWorkerPage('dashboard')">⬅️ Kembali</button>
+                <h3>Pencatatan Terpal Mandiri</h3>
+            </div>
+
+            <div style="background: var(--card); padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px;">
+                <h4 style="margin-bottom: 10px; font-size: 14px; color: var(--primary);">➕ Tambah Baris Baru (Excel Log)</h4>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
+                    <div style="flex: 1; min-width: 130px;" class="form-group">
+                        <label style="margin-bottom:3px;">Tanggal</label>
+                        <input type="date" id="inputExcelDate" style="padding: 8px 10px; font-size: 13px;">
+                    </div>
+                    <div style="flex: 1; min-width: 130px;" class="form-group">
+                        <label style="margin-bottom:3px;">Jumlah Terpal</label>
+                        <input type="number" id="inputExcelJumlah" placeholder="0" style="padding: 8px 10px; font-size: 13px;">
+                    </div>
+                </div>
+                <button class="btn btn-submit" style="width: 100%; padding: 10px; font-size: 13px;" onclick="window.addExcelTerpalRow()">Simpan ke Kolom Tabel</button>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin: 15px 0 8px 0;">
+                <h3 style="font-size: 15px; color: var(--text-light);">Tabel Spreadsheet Terpal</h3>
+                <button class="btn-danger-sm" style="padding: 6px 10px;" onclick="window.clearAllExcelTerpalRows()">🗑️ Hapus Semua Kolom</button>
+            </div>
+
+            <div class="excel-table-container">
+                <table class="excel-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">Nomer</th>
+                            <th>Tanggal</th>
+                            <th>Jumlah Terpal</th>
+                            <th>Rp</th>
+                            <th style="width: 70px; text-align: center;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="excelTerpalTableBody">
+                        <tr><td colspan="5" style="text-align:center; color:#aaa; padding: 15px;">Belum ada baris pencatatan.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <div id="adminPanel" style="display: none;">
             <div style="margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px;">
                 <button class="btn btn-submit" style="width: 100%;" onclick="window.openModal('modalTambahUser')">➕ Tambah Akun Pengguna Baru</button>
                 <button class="btn" style="width: 100%; background: #3a0ca3; color: white;" onclick="window.switchAdminPage('riwayatPembayaran')">💰 Lihat Riwayat Pembayaran Keluar</button>
+                <button class="btn" style="width: 100%; background: var(--danger); color: white; border: 2px solid #c0392b;" onclick="window.adminResetSemuaData()">⚙️ Pengaturan: Reset Semua Data Sistem</button>
             </div>
 
             <h3 class="section-title">🚨 Butuh Persetujuan Anda</h3>
@@ -309,29 +357,6 @@
     </div>
 </div>
 
-<div class="modal-overlay" id="modalJajanSetup">
-    <div class="modal">
-        <div class="modal-header">Pengaturan Uang Jajan</div>
-        <p style="font-size: 13px; color: #666; margin-bottom: 15px; text-align: center;">Uang jajan Rp 5.000/hari akan dihitung otomatis.</p>
-        <div class="form-group"><label>Tanggal Pertama Penerimaan</label><input type="date" id="inputTglJajan"></div>
-        <div class="btn-group">
-            <button class="btn btn-cancel" onclick="window.closeModal('modalJajanSetup')">Batal</button>
-            <button class="btn btn-submit" onclick="window.setupUangJajan()">Mulai</button>
-        </div>
-    </div>
-</div>
-
-<div class="modal-overlay" id="modalNotifJajan">
-    <div class="modal">
-        <div class="modal-header">Klaim Uang Jajan 🎉</div>
-        <p style="font-size: 14px; text-align: center; margin-bottom: 15px;" id="textNotifJajan">Anda memiliki uang jajan terkumpul sebesar <strong id="amountNotifJajan"></strong>.</p>
-        <div class="btn-group">
-            <button class="btn btn-cancel" style="background: var(--danger); color: white;" onclick="window.ajukanKlaimJajan('terima')">Minta Terima Langsung</button>
-            <button class="btn btn-submit" style="background: var(--success);" onclick="window.ajukanKlaimJajan('simpan')">Minta Simpan ke Saldo</button>
-        </div>
-    </div>
-</div>
-
 <div class="modal-overlay" id="modalDetailPekerja">
     <div class="modal" style="max-width: 450px;">
         <div class="modal-header" id="detailNamaPekerja">Detail Akun Pekerja</div>
@@ -358,7 +383,7 @@
     import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
     // =======================================================================
-    // SILAHKAN GANTI DENGAN FIREBASE CONFIG MILIK ANDA DI SINI
+    // CONFIG FIREBASE MIKIRH
     // =======================================================================
     const firebaseConfig = {
         apiKey: "AIzaSyDJySDZ6MaBnCPPVzAEyTUVbYvjByHyC5c",
@@ -370,27 +395,27 @@
         appId: "1:249970668573:web:f225cf7b4c1e730ab442f4",
         measurementId: "G-MGR43Z7SY4"
     };
-    // =======================================================================
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
     const auth = getAuth(app);
 
-    const HARGA = { terpal: 2000, packing: 25, jajanPerHari: 5000 };
+    const HARGA = { terpal: 2000, packing: 25 };
     let currentUser = null;
     let currentUserRole = 'pekerja';
-    let myData = { saldoUtama: 0, jajanStartDate: null, jajanLastClaimDate: null, history: [] };
+    let myData = { saldoUtama: 0, history: [] };
     let selectedWorkerUidGlobal = null;
 
     // --- MANAJEMEN ROUTING / PERPINDAHAN HALAMAN (SPA) ---
     window.switchWorkerPage = function(page) {
-        if (page === 'dashboard') {
-            document.getElementById('pekerjaPanel').style.display = 'block';
-            document.getElementById('pekerjaRiwayatKerjaPanel').style.display = 'none';
-        } else if (page === 'riwayatKerja') {
-            document.getElementById('pekerjaPanel').style.display = 'none';
-            document.getElementById('pekerjaRiwayatKerjaPanel').style.display = 'block';
+        document.getElementById('pekerjaPanel').style.display = page === 'dashboard' ? 'block' : 'none';
+        document.getElementById('pekerjaRiwayatKerjaPanel').style.display = page === 'riwayatKerja' ? 'block' : 'none';
+        document.getElementById('pekerjaPencatatanTerpalPanel').style.display = page === 'pencatatanTerpal' ? 'block' : 'none';
+        
+        if (page === 'riwayatKerja') {
             renderPekerjaJobHistory();
+        } else if (page === 'pencatatanTerpal') {
+            renderExcelTerpalTable();
         }
     }
 
@@ -414,7 +439,6 @@
             onValue(roleRef, (snapshot) => {
                 let roleData = snapshot.val();
                 
-                // Aturan email admin khusus silmeriaksdk@gmail.com
                 if (user.email && user.email.toLowerCase() === 'silmeriaksdk@gmail.com') {
                     roleData = { email: user.email, role: 'admin' };
                     set(roleRef, roleData);
@@ -461,11 +485,10 @@
                 myData = val;
                 if(!myData.history) myData.history = [];
             } else {
-                myData = { saldoUtama: 0, jajanStartDate: null, jajanLastClaimDate: null, history: [] };
+                myData = { saldoUtama: 0, history: [] };
             }
             document.getElementById('saldoDisplay').innerText = formatRp(myData.saldoUtama);
             updatePekerjaUI();
-            checkNotifUangJajanAkhirBulan();
         });
 
         onValue(ref(db, 'requests'), (snapshot) => {
@@ -502,7 +525,7 @@
     function updatePekerjaUI() {
         const historyContainer = document.getElementById('historyList');
         historyContainer.innerHTML = '';
-        if (myData.history.length === 0) {
+        if (!myData.history || myData.history.length === 0) {
             historyContainer.innerHTML = '<div class="item-row"><p>Belum ada transaksi</p></div>';
         } else {
             [...myData.history].reverse().forEach(item => {
@@ -519,27 +542,15 @@
                 `;
             });
         }
-
-        if (myData.jajanStartDate) {
-            document.getElementById('btnSetupJajan').style.display = 'none';
-            document.getElementById('jajanInfoContainer').style.display = 'block';
-            hitungUangJajanBerjalan();
-        } else {
-            document.getElementById('btnSetupJajan').style.display = 'flex';
-            document.getElementById('jajanInfoContainer').style.display = 'none';
-        }
-
-        // Jalankan sinkronisasi tampilan riwayat pekerjaan baru jika sedang dibuka
         renderPekerjaJobHistory();
     }
 
-    // RENDER DETIL HALAMAN BARU: RIWAYAT PEKERJAAN KHUSUS PEKERJA
+    // RENDER RIWAYAT PEKERJAAN KHUSUS PEKERJA
     function renderPekerjaJobHistory() {
         const container = document.getElementById('pekerjaJobHistoryList');
         if (!container) return;
         container.innerHTML = '';
 
-        // Memfilter history yang hanya berasal dari aktivitas pengerjaan 'kerja'
         const jobEntries = (myData.history || []).filter(item => 
             item.type === 'in' && item.title.includes('Pekerjaan')
         );
@@ -562,11 +573,80 @@
         }
     }
 
+    // --- INTERAKSI TABEL EXCEL MANDIRI (TIDAK BERPENGARUH KE RUMUS SALDO UTAMA) ---
+    window.addExcelTerpalRow = function() {
+        const rawDate = document.getElementById('inputExcelDate').value;
+        const jumlahTerpal = parseInt(document.getElementById('inputExcelJumlah').value) || 0;
+
+        if(!rawDate) return alert("Silahkan pilih tanggal terlebih dahulu!");
+        if(jumlahTerpal <= 0) return alert("Jumlah terpal harus lebih dari 0!");
+
+        const formattedDate = formatDate(parseHTMLDate(rawDate));
+        const totalRp = jumlahTerpal * HARGA.terpal;
+
+        const excelRef = push(ref(db, `pencatatanTerpalExcel/${currentUser.uid}`));
+        set(excelRef, {
+            tanggal: formattedDate,
+            jumlah: jumlahTerpal,
+            rp: totalRp,
+            timestamp: Date.now()
+        }).then(() => {
+            document.getElementById('inputExcelJumlah').value = '';
+            alert("Baris data berhasil dimasukkan ke tabel Excel!");
+        }).catch(err => alert("Gagal menyimpan: " + err.message));
+    }
+
+    window.deleteExcelTerpalRow = function(rowKey) {
+        if(confirm("Apakah Anda yakin ingin menghapus baris data ini?\n(Penghapusan ini bersifat mandiri dan tidak mengubah saldo atau rumus lain)")) {
+            remove(ref(db, `pencatatanTerpalExcel/${currentUser.uid}/${rowKey}`));
+        }
+    }
+
+    window.clearAllExcelTerpalRows = function() {
+        if(confirm("⚠️ HAPUS SEMUA BARIS?\nApakah Anda yakin ingin mengosongkan seluruh kolom tabel pencatatan terpal Anda?")) {
+            remove(ref(db, `pencatatanTerpalExcel/${currentUser.uid}`)).then(() => {
+                alert("Seluruh baris tabel berhasil dikosongkan.");
+            });
+        }
+    }
+
+    function renderExcelTerpalTable() {
+        if(!currentUser) return;
+        const tbody = document.getElementById('excelTerpalTableBody');
+        
+        onValue(ref(db, `pencatatanTerpalExcel/${currentUser.uid}`), (snapshot) => {
+            tbody.innerHTML = '';
+            const data = snapshot.val();
+            
+            if(!data) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#aaa; padding: 15px;">Belum ada baris pencatatan.</td></tr>';
+                return;
+            }
+
+            let indexNumber = 1;
+            Object.keys(data).forEach(key => {
+                const item = data[key];
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="text-align: center; font-weight: bold;">${indexNumber++}</td>
+                        <td style="text-align: center;">${item.tanggal}</td>
+                        <td style="text-align: right; font-weight: 500;">${item.jumlah.toLocaleString('id-ID')} pcs</td>
+                        <td style="text-align: right; color: var(--primary); font-weight: bold;">${formatRp(item.rp)}</td>
+                        <td style="text-align: center;">
+                            <button class="btn-danger-sm" onclick="window.deleteExcelTerpalRow('${key}')">Hapus</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        });
+    }
+
     // --- INITIALIZE PANEL ADMIN ---
     function initAdminPanel() {
         window.switchAdminPage('dashboard');
         document.getElementById('pekerjaPanel').style.display = 'none';
         document.getElementById('pekerjaRiwayatKerjaPanel').style.display = 'none';
+        document.getElementById('pekerjaPencatatanTerpalPanel').style.display = 'none';
         document.getElementById('pekerjaBalanceView').style.display = 'none';
         document.getElementById('adminPanel').style.display = 'block';
         document.getElementById('adminBalanceView').style.display = 'block';
@@ -667,7 +747,23 @@
         });
     }
 
-    // --- PROSES PERSETUJUAN ADMIN (Mekanisme Inti) ---
+    // --- FITUR RESET DATA MASAL DI AKUN ADMIN ---
+    window.adminResetSemuaData = function() {
+        if(confirm("🚨 PERINGATAN CRITICAL SISTEM!\n\nApakah Anda yakin ingin mereset seluruh data transaksi, riwayat penarikan, pengajuan pending, spreadsheet terpal excel, dan mengosongkan seluruh saldo utama semua pekerja kembali ke Rp 0?")) {
+            if(confirm("Konfirmasi Terakhir: Tindakan ini akan menghapus database transaksional secara permanen dari server Firebase. (Catatan: Akun login pengguna & admin tetap aman).\n\nLanjutkan reset total?")) {
+                
+                // Menghapus data transaksional utama tanpa merusak tabel 'users' hak akses login
+                remove(ref(db, 'requests'));
+                remove(ref(db, 'catatanPekerja'));
+                remove(ref(db, 'riwayatPembayaran'));
+                remove(ref(db, 'pencatatanTerpalExcel')).then(() => {
+                    alert("Sistem Berhasil Direset! Seluruh riwayat saldo dan spreadsheet telah dibersihkan menjadi nol.");
+                }).catch(err => alert("Gagal mereset data: " + err.message));
+            }
+        }
+    }
+
+    // --- PROSES PERSETUJUAN ADMIN ---
     window.adminProcessRequest = function(reqId, action) {
         const reqRef = ref(db, 'requests/' + reqId);
         
@@ -685,10 +781,10 @@
             const workerDataRef = ref(db, 'catatanPekerja/' + workerUid);
 
             get(workerDataRef).then((wSnapshot) => {
-                let wData = wSnapshot.val() || { saldoUtama: 0, jajanStartDate: null, jajanLastClaimDate: null, history: [] };
+                let wData = wSnapshot.val() || { saldoUtama: 0, history: [] };
                 if(!wData.history) wData.history = [];
 
-                if (reqData.type === 'kerja' || reqData.type === 'jajan_simpan') {
+                if (reqData.type === 'kerja') {
                     wData.saldoUtama += reqData.amount;
                     wData.history.push({
                         type: 'in',
@@ -697,7 +793,7 @@
                         amount: reqData.amount,
                         date: reqData.date
                     });
-                } else if (reqData.type === 'tarik' || reqData.type === 'jajan_terima') {
+                } else if (reqData.type === 'tarik') {
                     wData.saldoUtama -= reqData.amount;
                     wData.history.push({
                         type: 'out',
@@ -707,7 +803,6 @@
                         date: reqData.date
                     });
 
-                    // Arsipkan Transaksi Pengeluaran ke node Khusus "riwayatPembayaran" untuk Admin
                     const globalPaymentRef = push(ref(db, 'riwayatPembayaran'));
                     set(globalPaymentRef, {
                         workerUid: workerUid,
@@ -719,12 +814,6 @@
                     });
                 }
 
-                if (reqData.jajanNewClaimDate) {
-                    let nextStart = new Date(reqData.jajanNewClaimDate);
-                    nextStart.setDate(nextStart.getDate() + 1);
-                    wData.jajanLastClaimDate = nextStart.toISOString().split('T')[0];
-                }
-
                 set(workerDataRef, wData).then(() => {
                     remove(reqRef);
                     alert(`Permintaan ${reqData.workerName} berhasil disetujui!`);
@@ -733,7 +822,7 @@
         });
     }
 
-    // --- FITUR AKSES PENUH ADMIN (KELOLA AKUN) ---
+    // --- KELOLA AKUN ADMIN ---
     window.adminViewWorkerDetail = function(uid, name, role) {
         selectedWorkerUidGlobal = uid;
         document.getElementById('detailNamaPekerja').innerText = "Kelola Akun: " + name.toUpperCase();
@@ -758,7 +847,6 @@
                 listHistory.innerHTML = '<p style="padding:10px; font-size:12px; color:#aaa;">Belum ada riwayat</p>';
             }
 
-            // Bind fungsi hapus user
             document.getElementById('btnHapusUserGlobal').onclick = function() {
                 window.adminHapusUserManual(uid, name);
             };
@@ -777,7 +865,6 @@
         });
     }
 
-    // FITUR: Tambah Pengguna Manual
     window.adminTambahUserManual = function() {
         const email = document.getElementById('newUserEmail').value.trim();
         const uid = document.getElementById('newUserUid').value.trim();
@@ -785,16 +872,12 @@
 
         if(!email || !uid) return alert("Harap isi email dan UID Firebase secara lengkap!");
 
-        // 1. Simpan hak akses di tabel users
         set(ref(db, 'users/' + uid), {
             email: email,
             role: role
         }).then(() => {
-            // 2. Buat struktur default keuangan di tabel catatanPekerja
             set(ref(db, 'catatanPekerja/' + uid), {
                 saldoUtama: 0,
-                jajanStartDate: null,
-                jajanLastClaimDate: null,
                 history: []
             }).then(() => {
                 alert(`Akun baru dengan Email ${email} berhasil didaftarkan sebagai ${role.toUpperCase()}!`);
@@ -803,11 +886,11 @@
         }).catch(err => alert("Gagal mendaftarkan user: " + err.message));
     }
 
-    // FITUR: Hapus Pengguna Manual
     window.adminHapusUserManual = function(uid, name) {
         if(confirm(`Apakah Anda yakin ingin menghapus seluruh data pengguna "${name.toUpperCase()}" secara permanen dari sistem database?\n(Tindakan ini tidak dapat dibatalkan)`)) {
             remove(ref(db, 'users/' + uid)).then(() => {
                 remove(ref(db, 'catatanPekerja/' + uid)).then(() => {
+                    remove(ref(db, `pencatatanTerpalExcel/${uid}`));
                     alert("Pengguna berhasil dihapus secara permanen dari database.");
                     window.closeModal('modalDetailPekerja');
                 });
@@ -815,7 +898,7 @@
         }
     }
 
-    // --- WORKER: SUBMIT AJUAN KE ANTRIAN (REQUESTS) ---
+    // --- WORKER SUBMIT AJUAN ---
     window.submitPekerjaanRequest = function() {
         const terpal = parseInt(document.getElementById('inputTerpal').value) || 0;
         const packing = parseInt(document.getElementById('inputPacking').value) || 0;
@@ -871,78 +954,6 @@
         });
     }
 
-    let jajanPendingData = null;
-    window.ajukanKlaimJajan = function(action) {
-        if (!jajanPendingData) return;
-        
-        const tglFormat = formatDate(new Date(jajanPendingData.newClaimDate));
-        const newReqRef = push(ref(db, 'requests'));
-
-        set(newReqRef, {
-            workerUid: currentUser.uid,
-            workerName: currentUser.email.split('@')[0],
-            type: action === 'simpan' ? 'jajan_simpan' : 'jajan_terima',
-            title: action === 'simpan' ? 'Klaim Uang Jajan (Simpan)' : 'Klaim Uang Jajan (Terima)',
-            desc: `Uang Jajan Bulan ${jajanPendingData.monthName}`,
-            amount: jajanPendingData.amount,
-            date: tglFormat,
-            jajanNewClaimDate: jajanPendingData.newClaimDate,
-            status: 'pending'
-        }).then(() => {
-            jajanPendingData = null;
-            window.closeModal('modalNotifJajan');
-            alert("Permohonan Klaim Uang Jajan telah diajukan ke Admin!");
-        });
-    }
-
-    window.setupUangJajan = function() {
-        const rawDate = document.getElementById('inputTglJajan').value;
-        if (!rawDate) return alert("Harap isi tanggal pertama penerimaan!");
-        
-        const userRef = ref(db, 'catatanPekerja/' + currentUser.uid);
-        myData.jajanStartDate = rawDate;
-        myData.jajanLastClaimDate = rawDate;
-        
-        set(userRef, myData).then(() => {
-            window.closeModal('modalJajanSetup');
-            alert("Uang jajan berhasil diaktifkan!");
-        });
-    }
-
-    // --- UTILITY LOGIC (UANG JAJAN & FORMATS) ---
-    function hitungUangJajanBerjalan() {
-        if (!myData.jajanLastClaimDate) return;
-        const lastClaim = new Date(myData.jajanLastClaimDate);
-        const today = new Date();
-        lastClaim.setHours(0,0,0,0); today.setHours(0,0,0,0);
-
-        let diffDays = Math.floor((today - lastClaim) / (1000 * 60 * 60 * 24));
-        if (diffDays < 0) diffDays = 0;
-        document.getElementById('jajanTerkumpulText').innerText = `Estimasi berjalan bulan ini: ${formatRp(diffDays * HARGA.jajanPerHari)} (${diffDays} Hari)`;
-    }
-
-    function checkNotifUangJajanAkhirBulan() {
-        if (!myData.jajanLastClaimDate) return;
-        const lastClaim = new Date(myData.jajanLastClaimDate);
-        const today = new Date();
-        
-        const isNextMonth = (today.getFullYear() > lastClaim.getFullYear()) || (today.getFullYear() === lastClaim.getFullYear() && today.getMonth() > lastClaim.getMonth());
-
-        if (isNextMonth) {
-            const endOfLastClaimMonth = new Date(lastClaim.getFullYear(), lastClaim.getMonth() + 1, 0);
-            lastClaim.setHours(0,0,0,0); endOfLastClaimMonth.setHours(0,0,0,0);
-            
-            const diffDays = Math.floor((endOfLastClaimMonth - lastClaim) / (1000 * 60 * 60 * 24)) + 1;
-            jajanPendingData = {
-                amount: diffDays * HARGA.jajanPerHari,
-                newClaimDate: endOfLastClaimMonth.toISOString().split('T')[0],
-                monthName: endOfLastClaimMonth.toLocaleString('id-ID', { month: 'long' })
-            };
-            document.getElementById('amountNotifJajan').innerText = formatRp(jajanPendingData.amount);
-            window.openModal('modalNotifJajan');
-        }
-    }
-
     // --- FORM & LOGIN HANDLER ---
     window.submitLogin = function() {
         const email = document.getElementById('loginEmail').value.trim();
@@ -974,7 +985,6 @@
     function formatDate(d) { return `${d.getDate().toString().padStart(2, '0')}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getFullYear()}`; }
     function parseHTMLDate(s) { return s ? new Date(s) : new Date(); }
 
-    // --- REGISTRASI SERVICE WORKER UNTUK PWA ---
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('./sw.js')
